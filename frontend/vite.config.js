@@ -4,9 +4,9 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // PWA config: installable, standalone/fullscreen, offline-capable.
 // Icon + colors are placeholders themed to the app (gold on dark navy) — easy to swap.
-export default defineConfig({
-  // Served from GitHub Pages at https://dhruvc0110.github.io/Optionality/
-  base: "/Optionality/",
+export default defineConfig(({ command }) => ({
+  // GitHub Pages serves under /Optionality/ in production; local dev stays at "/".
+  base: command === "build" ? "/Optionality/" : "/",
   plugins: [
     react(),
     VitePWA({
@@ -45,4 +45,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+}));
