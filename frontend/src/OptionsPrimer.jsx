@@ -247,6 +247,7 @@ function payoffExtremes(legs) {
 -----------------------------------------------------------------*/
 function usePayoff(stratKey, params) {
   return useMemo(() => {
+    if (!stratKey) return null; // some lesson steps have no chart
     const s = STRATEGIES[stratKey];
     const legs = s.legs(params);
     const center = s.center(params);
@@ -272,14 +273,17 @@ function usePayoff(stratKey, params) {
         bes.push(+(data[i - 1].price + t * (data[i].price - data[i - 1].price)).toFixed(2));
       }
     }
-    return { data, maxPnl, minPnl, bes, meta: s };
+    return { data, maxPnl, minPnl, bes, meta: s, legs };
   }, [stratKey, params]);
 }
+
+// Total per-share P&L of a strategy at a given stock price (for the "now" readout).
+const totalPnLAt = (legs, S) => legs.reduce((sum, leg) => sum + legPnL(leg, S), 0);
 
 /* ----------------------------------------------------------------
    Small reusable payoff chart
 -----------------------------------------------------------------*/
-function PayoffChart({ data, bes, height = 260, compact = false }) {
+function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) {
   // Gradient split is based on the VISIBLE curve, not the analytic extremes
   // (which can be Infinity for unbounded-upside strategies).
   const vis = data.map((d) => d.pnl);
@@ -287,6 +291,9 @@ function PayoffChart({ data, bes, height = 260, compact = false }) {
   const vMin = Math.min(...vis);
   const off = vMax <= 0 ? 0 : vMin >= 0 ? 1 : vMax / (vMax - vMin);
   const gid = useMemo(() => "g" + Math.random().toString(36).slice(2, 8), []);
+  // Snap a price to the nearest point actually plotted (recharts category axis).
+  const snap = (p) =>
+    data.reduce((a, c) => (Math.abs(c.price - p) < Math.abs(a.price - p) ? c : a)).price;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 8, right: 10, left: compact ? -18 : 0, bottom: 0 }}>
@@ -333,12 +340,25 @@ function PayoffChart({ data, bes, height = 260, compact = false }) {
         {bes.map((b, i) => (
           <ReferenceLine
             key={i}
-            x={data.reduce((p, c) => (Math.abs(c.price - b) < Math.abs(p.price - b) ? c : p)).price}
+            x={snap(b)}
             stroke="#e8b339"
             strokeDasharray="3 3"
             strokeOpacity={0.6}
+            label={
+              compact
+                ? undefined
+                : { value: `break-even $${b}`, position: "insideTopRight", fill: "#e8b339", fontSize: 9, fontFamily: "var(--mono)" }
+            }
           />
         ))}
+        {spot != null && (
+          <ReferenceLine
+            x={snap(spot)}
+            stroke="#58a6ff"
+            strokeWidth={1.5}
+            label={{ value: `now $${spot}`, position: "insideTopLeft", fill: "#58a6ff", fontSize: 9, fontFamily: "var(--mono)" }}
+          />
+        )}
         <Area
           type="monotone"
           dataKey="pnl"
@@ -356,10 +376,69 @@ function PayoffChart({ data, bes, height = 260, compact = false }) {
 -----------------------------------------------------------------*/
 const LESSON = [
   {
-    title: "What is an option, really?",
-    body: "An option is a contract. It gives you the RIGHT — but never the obligation — to buy or sell 100 shares of a stock at a fixed price (the strike) on or before a set date (expiry). For that right, the buyer pays the seller a fee called the premium.",
-    aside: "Think of it like a deposit on a house. You pay to lock in a price. If the deal makes sense later, you exercise it. If not, you walk away — losing only the deposit.",
+    title: "Start here: the price, and betting on it",
+    body: "A share of a company trades at a live price — call it the spot price, what it costs right now. If you think it'll go up, you're 'bullish'; if down, 'bearish'. Options are simply a way to bet on that direction (or to protect yourself) for a small, known cost — instead of buying the shares outright.",
+    aside: "Almost everything that follows — strikes, premiums, profit, loss — is measured against that one live number: where the stock is right now.",
+    panel: {
+      label: "The number everything hangs on",
+      items: [
+        { text: "Spot price = what the stock trades at this moment." },
+        { text: "Up = bullish. Down = bearish." },
+        { text: "An option lets you take a position for far less than buying 100 shares." },
+      ],
+    },
+  },
+  {
+    title: "What an option actually is",
+    body: "An option is a contract. It gives you the RIGHT — but never the obligation — to buy or sell 100 shares of one stock at a fixed price, on or before a set date. For that right, the buyer pays the seller a one-time fee called the premium.",
+    aside: "Think of a deposit on a house. You pay a little to lock in a price for a while. If the deal makes sense later, you use it. If not, you walk away — losing only the deposit.",
     demo: "longCall",
+  },
+  {
+    title: "The four ingredients",
+    body: "Every option is fully described by four things. Get these four and you can read any option quote in the world.",
+    aside: "When someone says 'I bought the AAPL 200 calls for June at $5', that's all four: underlying AAPL, strike 200, expiry June, premium $5.",
+    panel: {
+      label: "Read any option in four parts",
+      items: [
+        { text: "Underlying — which stock the contract is on." },
+        { text: "Strike — the locked-in price you can buy or sell at." },
+        { text: "Expiry — the deadline; after it, the contract is gone." },
+        { text: "Premium — the price you pay (or collect) for the contract." },
+      ],
+    },
+  },
+  {
+    title: "In, at, or out of the money",
+    body: "'Moneyness' just asks: is the deal worth using right now? A $100-strike CALL is in-the-money when the stock is above $100 (you could buy cheap and sell high), and out-of-the-money below it. For a PUT it's the reverse.",
+    aside: "Out-of-the-money options are cheaper because they're bets that haven't paid off yet — they only have value if the stock moves your way before the deadline.",
+    demo: "longCall",
+  },
+  {
+    title: "How the premium is priced",
+    body: "A premium is two parts added together. INTRINSIC value is the part that's already real money — how deep in-the-money it is. TIME value is the price of hope: the chance the stock moves further before expiry. More time left, and more 'wobble' (volatility) in the stock, both make time value — and so the premium — bigger.",
+    aside: "That's why an option slowly bleeds value as expiry nears even if the stock sits still — the hope is running out. It's called time decay. (Open the Simulator to see a premium split into intrinsic + time.)",
+    demo: "longCall",
+  },
+  {
+    title: "Where you break even",
+    body: "Buying isn't free, so 'the stock went my way' isn't the same as 'I made money'. Pay $5 for a $100 call and you only profit ABOVE $105 — the strike plus the premium. For a put it's the strike MINUS the premium. The move has to clear both the strike and what you paid.",
+    aside: "In the Simulator, drag 'Current price' and watch the break-even line: it shows exactly how far the stock must travel from today before you're in the green.",
+    demo: "longCall",
+  },
+  {
+    title: "Expiry, exercise & settlement",
+    body: "Options have deadlines. Standard monthly options expire the third Friday of the month; 'weeklies' expire most Fridays. At expiry, an in-the-money option is automatically used (exercised); an out-of-the-money one simply expires worthless.",
+    aside: "'Assignment' is the seller's side of exercise — they get called on to honour the contract. Single-stock options settle in actual shares (100 change hands); many index options settle in cash instead.",
+    panel: {
+      label: "What happens at the deadline",
+      items: [
+        { text: "Monthly: 3rd Friday. Weeklies: most Fridays." },
+        { text: "In-the-money → auto-exercised (shares/cash change hands)." },
+        { text: "Out-of-the-money → expires worthless; you keep nothing." },
+        { text: "Seller being exercised against = 'assignment'." },
+      ],
+    },
   },
   {
     title: "Calls vs. Puts",
@@ -368,28 +447,37 @@ const LESSON = [
     demo: "longPut",
   },
   {
-    title: "How a buyer makes (and loses) money",
-    body: "When you BUY an option, your loss is capped at the premium you paid — that's the worst case, full stop. Your gain can be large (a call's upside is theoretically unlimited). This asymmetry — small fixed risk, large potential reward — is the whole appeal.",
-    aside: "The catch: most options expire worthless. You're paying for a chance, and time works against you. The stock has to move enough to clear both the strike AND the premium.",
-    demo: "longCall",
-  },
-  {
-    title: "The other side: selling premium",
-    body: "Someone sells you that option and collects the premium as income. The seller's math is reversed: the MOST they can make is the premium, while their potential loss can be much larger. Selling is how you generate income — but it carries the heavier tail risk.",
-    aside: "This is the heart of the risk warning in this tool: selling premium on a single stock feels like easy income until an overnight gap blows through your floor.",
+    title: "Two sides: buying vs. selling",
+    body: "When you BUY an option, your loss is capped at the premium — that's the worst case, full stop — while your gain can be large. The SELLER's math is the mirror image: the most they can make is the premium they collected, but their loss can be far bigger. Buyers pay for a chance; sellers collect income and carry the tail risk.",
+    aside: "Most options expire worthless, which is why selling premium feels like easy income — right up until the month a stock gaps and the seller's 'small' premium meets a very large loss.",
     demo: "cashSecuredPut",
   },
   {
-    title: "Why long-only investors use them",
-    body: "Three reasons. INCOME: sell covered calls on shares you own. INSURANCE: buy puts to cap your downside (a protective put). EFFICIENCY: a collar uses a sold call to pay for a protective put — fencing in both ends cheaply.",
-    aside: "Notice the trade always shows up: every dollar of protection you buy, or upside you cap, changes your return. There is no free lunch — only chosen trade-offs.",
-    demo: "collar",
+    title: "Rolling a position",
+    body: "You don't have to wait for expiry. 'Rolling' means closing your current option early and opening a later or different one in the same move — to buy more time, lock in a gain, or repair a trade that's going against you. You either pay a little (a debit) or collect a little (a credit) to do it.",
+    aside: "Rolling isn't magic. You're paying or collecting to reset the clock — useful, but every roll is another small bet, not a way to erase a bad one.",
+    panel: {
+      label: "Why people roll",
+      items: [
+        { text: "Out (later expiry) — buy more time for the thesis to work." },
+        { text: "Up/down (new strike) — chase the stock or lock in a gain." },
+        { text: "It's two trades at once: close the old, open the new." },
+      ],
+    },
   },
   {
-    title: "Hard floor vs. soft floor",
-    body: "A position with a bought put (protective put, collar, spread) has a HARD floor — the maximum loss is contractually fixed and survives an overnight gap. A naked sold option (covered call, cash-secured put) has only a SOFT floor: fine in calm markets, but a gap can punch straight through it.",
-    aside: "This single distinction is what lets a portfolio honestly claim a 15% loss cap. Now jump into the Simulator and watch a floor turn hard or soft as you change the legs.",
-    demo: "protectivePut",
+    title: "When it worked — and when it blew up",
+    body: "The mechanics are neutral; outcomes are not. A bought put is a HARD floor — your loss is contractually capped even in a crash. A naked sold option is only a SOFT floor — fine in calm markets, until a gap punches straight through it. Same option chain, very different nights' sleep.",
+    aside: "Hard floors cost you a little every month. Soft floors pay you a little every month — until the one month they don't. That trade-off is the spine of this whole tool.",
+    panel: {
+      label: "Real and illustrative",
+      items: [
+        { tag: "worked", text: "March 2020: as markets fell ~34% in weeks, investors holding protective puts kept a hard floor — their downside was capped while everything else cratered." },
+        { tag: "failed", text: "Jan 2021: traders short GameStop options were on the soft-floor side when it rocketed from ~$20 to ~$480 — 'small' premiums met catastrophic losses." },
+        { tag: "failed", text: "Feb 2018 ('volmageddon'): short-volatility products lost ~96% in a single day when calm flipped to chaos overnight." },
+        { tag: "note", text: "Illustrative: a retiree sells covered calls for steady income; a 40% rally gets the shares called away — real income, but a capped, missed run." },
+      ],
+    },
   },
 ];
 
@@ -412,6 +500,32 @@ function StatPill({ label, value, tone }) {
       <span className="pill-value" style={{ color: tone }}>
         {value}
       </span>
+    </div>
+  );
+}
+
+const TAG_DOT = { worked: "#3fb950", failed: "#f85149", note: "#58a6ff" };
+const TAG_TEXT = { worked: "Worked", failed: "Blew up", note: "Example" };
+
+// Takeaway card shown for lesson steps that have no payoff chart.
+function LessonPanel({ panel }) {
+  return (
+    <div className="lpanel">
+      <div className="demo-label">{panel.label}</div>
+      <ul className="lpanel-list">
+        {panel.items.map((it, i) => (
+          <li key={i} className={it.tag ? "lpanel-item tagged" : "lpanel-item"}>
+            {it.tag ? (
+              <span className="lpanel-tag" style={{ color: TAG_DOT[it.tag] }}>
+                {TAG_TEXT[it.tag]}
+              </span>
+            ) : (
+              <span className="lpanel-bullet" />
+            )}
+            <span className="lpanel-text">{it.text}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -452,6 +566,7 @@ export default function OptionsPrimer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [stratKey, setStratKey] = useState("longCall");
+  const [spot, setSpot] = useState(100); // "where the stock is now" — the anchor for the readout
   const [allParams, setAllParams] = useState(() => {
     const o = {};
     for (const k of STRAT_KEYS) o[k] = { ...STRATEGIES[k].defaults };
@@ -463,6 +578,33 @@ export default function OptionsPrimer() {
     setAllParams((prev) => ({ ...prev, [stratKey]: { ...prev[stratKey], [key]: val } }));
 
   const payoff = usePayoff(stratKey, params);
+
+  // "Now" readout: P&L if the stock expired at today's price, and the move to break even.
+  const spotPnL = Math.round(totalPnLAt(payoff.legs, spot) * CONTRACT);
+  const nearestBE = payoff.bes.length
+    ? payoff.bes.reduce((a, b) => (Math.abs(b - spot) < Math.abs(a - spot) ? b : a))
+    : null;
+  const movePct = nearestBE != null && spot ? ((nearestBE - spot) / spot) * 100 : null;
+  // Premium = intrinsic + time value, but only meaningful for a single bought/sold option.
+  const singleOpt =
+    payoff.legs.length === 1 &&
+    (payoff.legs[0].kind === "call" || payoff.legs[0].kind === "put");
+  let premiumSplit = null;
+  if (singleOpt) {
+    const leg = payoff.legs[0];
+    const rawIntrinsic =
+      leg.kind === "call" ? Math.max(spot - leg.strike, 0) : Math.max(leg.strike - spot, 0);
+    // A premium can never be less than intrinsic value in a real market.
+    const belowIntrinsic = rawIntrinsic > leg.premium;
+    const intrinsic = Math.min(rawIntrinsic, leg.premium);
+    premiumSplit = {
+      premium: leg.premium,
+      intrinsic,
+      timeVal: leg.premium - intrinsic,
+      rawIntrinsic,
+      belowIntrinsic,
+    };
+  }
 
   const openInSim = (key) => {
     setStratKey(key);
@@ -564,13 +706,24 @@ export default function OptionsPrimer() {
               </div>
             </div>
             <div className="lesson-demo">
-              <div className="demo-label">
-                {STRATEGIES[lessonDemoKey].name} — payoff at expiry
-              </div>
-              <PayoffChart {...lessonPayoff} height={220} compact />
-              <button className="demo-link" onClick={() => openInSim(lessonDemoKey)}>
-                Tinker with this <ArrowRight size={12} />
-              </button>
+              {lessonDemoKey ? (
+                <>
+                  <div className="demo-label">
+                    {STRATEGIES[lessonDemoKey].name} — payoff at expiry
+                  </div>
+                  <PayoffChart
+                    {...lessonPayoff}
+                    spot={STRATEGIES[lessonDemoKey].center(allParams[lessonDemoKey])}
+                    height={220}
+                    compact
+                  />
+                  <button className="demo-link" onClick={() => openInSim(lessonDemoKey)}>
+                    Tinker with this <ArrowRight size={12} />
+                  </button>
+                </>
+              ) : (
+                <LessonPanel panel={LESSON[step].panel} />
+              )}
             </div>
           </div>
           <div className="lesson-nav">
@@ -616,7 +769,48 @@ export default function OptionsPrimer() {
                   {payoff.meta.risk}
                 </span>
               </div>
-              <PayoffChart {...payoff} height={300} />
+              <PayoffChart {...payoff} spot={spot} height={300} />
+              <div className="now-readout">
+                <p>
+                  At today's <strong style={{ color: "#58a6ff" }}>${spot}</strong>, if it expired
+                  right now this position is{" "}
+                  <strong style={{ color: spotPnL >= 0 ? "#3fb950" : "#f85149" }}>
+                    {spotPnL >= 0 ? "+" : "−"}${Math.abs(spotPnL).toLocaleString()}
+                  </strong>
+                  .
+                  {nearestBE != null && (
+                    <>
+                      {" "}Break-even is at <strong style={{ color: "#e8b339" }}>${nearestBE}</strong> —
+                      the stock must {movePct > 0 ? "rise" : "fall"}{" "}
+                      <strong>{Math.abs(movePct).toFixed(1)}%</strong> from here
+                      {Math.abs(movePct) < 0.05 ? " (you're right at it)" : ""}.
+                    </>
+                  )}
+                </p>
+                {premiumSplit &&
+                  (premiumSplit.belowIntrinsic ? (
+                    <p className="prem-split">
+                      A ${premiumSplit.premium} premium is below this option's{" "}
+                      <strong style={{ color: "#58a6ff" }}>
+                        ${premiumSplit.rawIntrinsic.toFixed(2)}
+                      </strong>{" "}
+                      intrinsic value — a real market would never price it that low. Raise the
+                      premium (or move the price) to see a realistic split.
+                    </p>
+                  ) : (
+                    <p className="prem-split">
+                      Premium <strong>${premiumSplit.premium}</strong> ={" "}
+                      <strong style={{ color: "#58a6ff" }}>
+                        ${premiumSplit.intrinsic.toFixed(2)}
+                      </strong>{" "}
+                      intrinsic (already real) +{" "}
+                      <strong style={{ color: "#e8b339" }}>
+                        ${premiumSplit.timeVal.toFixed(2)}
+                      </strong>{" "}
+                      time value (the price of hope, fades by expiry).
+                    </p>
+                  ))}
+              </div>
               <div className="sim-stats">
                 <StatPill
                   label="Max gain"
@@ -654,7 +848,22 @@ export default function OptionsPrimer() {
             </div>
 
             <div className="sim-controls">
-              <div className="ctrl-head">Adjust the trade</div>
+              <div className="ctrl-head">Where is the stock now?</div>
+              <div className="ctrl spot-ctrl">
+                <div className="ctrl-top">
+                  <label>Current price</label>
+                  <span className="ctrl-val" style={{ color: "#58a6ff" }}>${spot}</span>
+                </div>
+                <input
+                  type="range"
+                  min={70}
+                  max={130}
+                  step={1}
+                  value={spot}
+                  onChange={(e) => setSpot(+e.target.value)}
+                />
+              </div>
+              <div className="ctrl-head" style={{ marginTop: 18 }}>Adjust the trade</div>
               {payoff.meta.sliders.map((sl) => (
                 <div className="ctrl" key={sl.key}>
                   <div className="ctrl-top">
@@ -830,6 +1039,21 @@ const CSS = `
 .sim-note em{color:var(--mut);font-style:italic;}
 .ftr{max-width:1080px;margin:36px auto 0;padding:18px 22px 0;border-top:1px solid var(--line);
   color:var(--dim);font-size:11.5px;text-align:center;}
+/* lesson takeaway panel (chart-less steps) */
+.lpanel{display:flex;flex-direction:column;}
+.lpanel-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:12px;}
+.lpanel-item{display:flex;gap:10px;align-items:flex-start;}
+.lpanel-bullet{flex:none;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:7px;}
+.lpanel-tag{flex:none;width:62px;font-family:var(--mono);font-size:9.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.lpanel-text{color:var(--mut);font-size:13px;line-height:1.45;}
+.lpanel-item.tagged .lpanel-text{color:var(--ink);opacity:.92;}
+/* simulator "now" readout + premium split */
+.now-readout{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;}
+.now-readout p{margin:0;color:var(--mut);font-size:13px;line-height:1.55;}
+.now-readout .prem-split{margin-top:8px;font-size:12.3px;color:var(--dim);}
+.spot-ctrl input[type=range]::-webkit-slider-thumb{background:var(--blue);box-shadow:0 0 0 1px var(--blue);}
+.spot-ctrl input[type=range]::-moz-range-thumb{background:var(--blue);}
 @media(max-width:760px){
   .lesson,.sim-grid{grid-template-columns:1fr;}
   .hdr{padding:24px 16px 16px;gap:12px;}
