@@ -291,10 +291,8 @@ function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) 
   const vMin = Math.min(...vis);
   const off = vMax <= 0 ? 0 : vMin >= 0 ? 1 : vMax / (vMax - vMin);
   const gid = useMemo(() => "g" + Math.random().toString(36).slice(2, 8), []);
-  // Snap a price to the nearest point actually plotted (recharts category axis).
-  const snap = (p) =>
-    data.reduce((a, c) => (Math.abs(c.price - p) < Math.abs(a.price - p) ? c : a)).price;
   return (
+    <div className="chart-wrap">
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 8, right: 10, left: compact ? -18 : 0, bottom: 0 }}>
         <defs>
@@ -312,10 +310,13 @@ function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) 
         <CartesianGrid stroke="#1c2230" strokeDasharray="2 4" />
         <XAxis
           dataKey="price"
+          type="number"
+          domain={["dataMin", "dataMax"]}
           tick={{ fill: "#6b7689", fontSize: 10, fontFamily: "var(--mono)" }}
           tickLine={false}
           axisLine={{ stroke: "#1c2230" }}
-          minTickGap={30}
+          tickCount={6}
+          tickFormatter={(v) => `$${Math.round(v)}`}
         />
         <YAxis
           tick={{ fill: "#6b7689", fontSize: 10, fontFamily: "var(--mono)" }}
@@ -340,7 +341,7 @@ function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) 
         {bes.map((b, i) => (
           <ReferenceLine
             key={i}
-            x={snap(b)}
+            x={b}
             stroke="#e8b339"
             strokeDasharray="3 3"
             strokeOpacity={0.6}
@@ -353,7 +354,7 @@ function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) 
         ))}
         {spot != null && (
           <ReferenceLine
-            x={snap(spot)}
+            x={spot}
             stroke="#58a6ff"
             strokeWidth={1.5}
             label={{ value: `now $${spot}`, position: "insideTopLeft", fill: "#58a6ff", fontSize: 9, fontFamily: "var(--mono)" }}
@@ -368,6 +369,11 @@ function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) 
         />
       </AreaChart>
     </ResponsiveContainer>
+      <div className="axis-hint">
+        <span>→ Stock price at expiry</span>
+        <span>↑ Profit / loss · 1 contract (100 sh)</span>
+      </div>
+    </div>
   );
 }
 
@@ -1039,6 +1045,11 @@ const CSS = `
 .sim-note em{color:var(--mut);font-style:italic;}
 .ftr{max-width:1080px;margin:36px auto 0;padding:18px 22px 0;border-top:1px solid var(--line);
   color:var(--dim);font-size:11.5px;text-align:center;}
+/* payoff chart axis caption */
+.chart-wrap{display:flex;flex-direction:column;}
+.axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;
+  font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.02em;}
+.axis-hint span:last-child{text-align:right;}
 /* lesson takeaway panel (chart-less steps) */
 .lpanel{display:flex;flex-direction:column;}
 .lpanel-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:12px;}
