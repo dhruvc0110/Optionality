@@ -534,10 +534,10 @@ function LessonPanel({ panel }) {
    Section <-> URL hash, so the phone back-gesture navigates between
    sections instead of exiting the app.
 -----------------------------------------------------------------*/
-const SECTIONS = ["reckoner", "primer", "sim"];
+const SECTIONS = ["primer", "reckoner", "sim"];
 const sectionFromHash = () => {
   const h = (window.location.hash || "").replace("#", "");
-  return SECTIONS.includes(h) ? h : "reckoner";
+  return SECTIONS.includes(h) ? h : "primer";
 };
 
 /* ----------------------------------------------------------------
@@ -630,11 +630,11 @@ export default function OptionsPrimer() {
 
       {/* NAV */}
       <nav className="nav">
-        <button className={section === "reckoner" ? "on" : ""} onClick={() => goSection("reckoner")}>
-          <MapIcon size={15} /> Reckoner
-        </button>
         <button className={section === "primer" ? "on" : ""} onClick={() => goSection("primer")}>
           <BookOpen size={15} /> Primer
+        </button>
+        <button className={section === "reckoner" ? "on" : ""} onClick={() => goSection("reckoner")}>
+          <MapIcon size={15} /> Reckoner
         </button>
         <button className={section === "sim" ? "on" : ""} onClick={() => goSection("sim")}>
           <SlidersHorizontal size={15} /> Simulator
