@@ -29,11 +29,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
-      # enablement:true turns on Pages (source: GitHub Actions) on first run,
-      # so no manual repo-Settings step is needed.
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
