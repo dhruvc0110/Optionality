@@ -1,0 +1,25 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #080b11;
+  /* Fill behind iOS notch / Android nav so standalone mode looks native */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+#root {
+  /* Respect device safe areas (notch, home indicator) in standalone mode */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Disable the browser pull-to-refresh / overscroll glow so it feels app-like */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Snappier taps on mobile (no 300ms delay, no grey flash) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
