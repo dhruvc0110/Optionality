@@ -1125,6 +1125,27 @@ const CSS = `
 .guide-item{margin:10px 0;}
 .guide-item strong{font-size:13.5px;color:var(--ink);font-family:var(--display);}
 .guide-item p{margin:3px 0 0;color:var(--mut);font-size:12.5px;line-height:1.55;}
+/* ticker input */
+.ticker-input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:13px;letter-spacing:.04em;outline:none;}
+.ticker-input:focus{border-color:var(--blue);}
+.ticker-input::placeholder{color:var(--dim);letter-spacing:0;}
+/* how-to + calendar */
+.howto{max-width:1080px;margin:18px auto 0;padding:18px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-radius:14px;}
+.howto-head{font-family:var(--display);font-weight:600;font-size:17px;color:var(--ink);}
+.howto-steps{margin:12px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:9px;}
+.howto-steps li{color:var(--ink);font-size:13.5px;line-height:1.5;opacity:.95;}
+.howto-steps li::marker{color:var(--gold);font-family:var(--mono);font-weight:600;}
+.howto-tip{margin:11px 0 0;color:var(--mut);font-size:12px;line-height:1.5;border-left:2px solid var(--line);padding-left:12px;}
+.howto-cal-head{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--gold);margin:18px 0 6px;}
+.howto-cal{width:100%;border-collapse:collapse;}
+.howto-cal td{border-top:1px solid var(--line);padding:11px 0;vertical-align:top;}
+.cal-when{width:108px;padding-right:14px!important;}
+.cal-when strong{display:block;font-family:var(--mono);font-size:12px;color:var(--ink);}
+.cal-when span{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px;}
+.cal-action{color:var(--mut);font-size:12.8px;line-height:1.5;}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;

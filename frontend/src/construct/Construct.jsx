@@ -26,6 +26,39 @@ const legDesc = (l) =>
     ? "100 shares"
     : `${l.kind === "call" ? "CALL" : "PUT"} $${l.strike}`;
 
+const fmtDate = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+// One placement instruction per leg, with concrete numbers.
+function legStep(leg, ticker, expLabel) {
+  if (leg.kind === "stock") {
+    return leg.dir === "long"
+      ? `Buy 100 shares of ${ticker} (about $${Math.round(leg.entry * 100).toLocaleString()}).`
+      : `Short 100 shares of ${ticker}.`;
+  }
+  const verb = leg.dir === "long" ? "Buy" : "Sell";
+  const type = leg.kind === "call" ? "call" : "put";
+  const cash = leg.dir === "long" ? "pay" : "collect";
+  return `${verb} 1 ${ticker} ${type} — strike $${leg.strike}, expiring ${expLabel} — ${cash} about $${Math.round(
+    leg.premium * 100
+  ).toLocaleString()}.`;
+}
+
+// What to do at expiry, per strategy.
+const EXPIRY_NOTE = {
+  coveredCall:
+    "Expiry day. If the stock is above your call strike, your 100 shares are sold at the strike (assignment) and you keep the premium. If below, you keep both the shares and the premium — sell a new call to earn again.",
+  cashSecuredPut:
+    "Expiry day. If the stock is below your put strike, you buy 100 shares at that strike. If above, the put expires worthless and you keep the premium.",
+  protectivePut:
+    "Expiry day. Your protective put expires. To stay insured past today, roll into a new put before this date.",
+  collar:
+    "Expiry day. The put and the call both resolve. To keep the collar on, roll it before this date.",
+  putSpreadCollar:
+    "Expiry day. All three options resolve. Roll the structure before this date to stay protected.",
+  bullCallSpread:
+    "Expiry day. Close the spread on or before today to lock in the result and avoid assignment surprises.",
+};
+
 // Plain-language explanations, reused by both the tap-to-explain notes and the
 // expandable guide. group: "input" = something you set · "output" = computed.
 const EXPLAIN = {
@@ -78,6 +111,7 @@ function ExplainNote({ k, onClose }) {
 
 export default function Construct() {
   const [key, setKey] = useState("collar");
+  const [ticker, setTicker] = useState("");
   const [account, setAccount] = useState(25000);
   const [market, setMarket] = useState({ spot: 100, days: 90, vol: 0.25, rate: 0.04, q: 0 });
   const [allStrikes, setAllStrikes] = useState(() => {
@@ -136,6 +170,7 @@ export default function Construct() {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
         strategyKey: key,
         name: def.name,
+        ticker: ticker.trim(),
         market: { ...market },
         strikes: { ...strikes },
         capitalRequired: Math.round(cap),
@@ -190,6 +225,35 @@ export default function Construct() {
   const contracts = cap > 0 ? Math.floor(account / cap) : 0;
   const overBudget = cap > account;
   const heavy = !overBudget && pctOfAccount > 60;
+
+  // Step-by-step placement + a dated calendar keyed off expiry.
+  const tk = ticker.trim() || "your stock";
+  const today = new Date();
+  const expiryDate = new Date(today);
+  expiryDate.setDate(today.getDate() + market.days);
+  const expLabel = `in ${market.days} days (≈ ${fmtDate(expiryDate)})`;
+  const orderedLegs = [...built.legs].sort(
+    (a, b) => (a.kind === "stock" ? 0 : 1) - (b.kind === "stock" ? 0 : 1)
+  );
+  const steps = orderedLegs.map((l) => legStep(l, tk, expLabel));
+  const multiLeg = built.legs.filter((l) => l.kind !== "stock").length > 1;
+  const calendar = [
+    { when: "Today", date: fmtDate(today), action: "Place the trade — follow the steps above." },
+  ];
+  if (market.days > 10) {
+    const manage = new Date(today);
+    manage.setDate(today.getDate() + market.days - 7);
+    calendar.push({
+      when: `In ${market.days - 7} days`,
+      date: fmtDate(manage),
+      action: "Check in: let it ride, roll to a later expiry, or close early.",
+    });
+  }
+  calendar.push({
+    when: `In ${market.days} days`,
+    date: fmtDate(expiryDate),
+    action: EXPIRY_NOTE[key] || "Expiry day — the options resolve.",
+  });
 
   return (
     <section className="wrap fade">
@@ -339,6 +403,19 @@ export default function Construct() {
 
         <div className="sim-controls">
           <div className="ctrl-head">The market</div>
+          <div className="ctrl">
+            <div className="ctrl-top">
+              <label>Ticker (optional)</label>
+            </div>
+            <input
+              className="ticker-input"
+              type="text"
+              maxLength={6}
+              placeholder="e.g. AAPL"
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+            />
+          </div>
           <Slider label="Current price" val={market.spot} suffix="" prefix="$" min={50} max={200} step={1} onChange={(v) => setM("spot", v)} tone="#58a6ff" info={info("spot")} />
           <Slider label="Days to expiry" val={market.days} suffix=" d" prefix="" min={7} max={365} step={1} onChange={(v) => setM("days", v)} info={info("days")} />
           <Slider label="Volatility" val={Math.round(market.vol * 100)} suffix="%" prefix="" min={5} max={120} step={1} onChange={(v) => setM("vol", v / 100)} info={info("vol")} />
@@ -380,6 +457,39 @@ export default function Construct() {
         </div>
       </div>
 
+      <div className="howto">
+        <div className="howto-head">How to place this trade</div>
+        <ol className="howto-steps">
+          {steps.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ol>
+        {multiLeg && (
+          <p className="howto-tip">
+            Tip: most brokers let you enter all of these legs as one combined (multi-leg) order.
+          </p>
+        )}
+        <p className="howto-tip">
+          Before you place it, check {tk === "your stock" ? "the stock's" : `${tk}'s`} next earnings
+          date — a report before expiry can cause a sharp gap.
+        </p>
+
+        <div className="howto-cal-head">Your calendar</div>
+        <table className="howto-cal">
+          <tbody>
+            {calendar.map((r, i) => (
+              <tr key={i}>
+                <td className="cal-when">
+                  <strong>{r.when}</strong>
+                  <span>{r.date}</span>
+                </td>
+                <td className="cal-action">{r.action}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <div className="positions">
         <div className="pos-head">
           <span>Your positions</span>
@@ -401,7 +511,7 @@ export default function Construct() {
         {positions.map((p) => (
           <div className="pos-row" key={p.id}>
             <div className="pos-info">
-              <strong>{p.name}</strong>
+              <strong>{p.ticker ? `${p.ticker} · ${p.name}` : p.name}</strong>
               <span className="pos-meta">
                 ${p.market.spot} spot · {p.market.days}d ·{" "}
                 {Object.values(p.strikes).map((s) => `$${s}`).join(" / ")} · cap $
