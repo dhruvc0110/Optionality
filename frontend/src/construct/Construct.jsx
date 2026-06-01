@@ -31,7 +31,7 @@ const legDesc = (l) =>
 const EXPLAIN = {
   spot: { label: "Current price (spot)", group: "input", text: "Where the stock trades right now. Every number is measured against it. You set it here; once broker data is connected, it'll fill in automatically." },
   days: { label: "Days to expiry", group: "input", text: "How long until the option's deadline. More days means more time value — and so a bigger premium." },
-  vol: { label: "Volatility", group: "input", text: "How much the stock is assumed to swing over a year. This is an assumption you set — NOT live market data yet (that arrives when broker data is connected). Higher volatility → bigger premium." },
+  vol: { label: "Volatility", group: "input", text: "How much the stock is assumed to swing over a year. It's an assumption you set — NOT live market data yet (that comes when broker data is connected). Higher volatility → bigger premium. Where to get it: read the 'IV' shown next to an option in your broker's option chain, or estimate from the stock's recent daily moves. Rough guide: steady ETFs ~15–25%, typical stocks ~25–45%, high-flyers 60%+." },
   rate: { label: "Risk-free rate", group: "input", text: "The baseline interest rate the pricing model uses (think short-term government bonds). It only nudges the numbers slightly." },
   account: { label: "Account size", group: "input", text: "Your hypothetical account. It does NOT affect pricing — it's used only to judge whether a trade fits: the capital it needs, the % of your account, and how many you could afford." },
   strike: { label: "Strike", group: "input", text: "A price you lock in with the option — the level you'd buy or sell at. You choose it, and it's the main lever on a trade's risk and reward." },
@@ -45,11 +45,13 @@ const EXPLAIN = {
   capital: { label: "Capital required", group: "output", text: "The cash to actually put the trade on — the shares net of option cash, or the cash at risk for an options-only trade. Compared with your account size to see if it fits." },
 };
 
-function Info({ k, explain, setExplain }) {
+function Info({ k, explain, setExplain, setHover }) {
   return (
     <button
       className="info-btn"
       aria-label="Explain"
+      onMouseEnter={() => setHover(k)}
+      onMouseLeave={() => setHover(null)}
       onClick={(e) => {
         e.stopPropagation();
         setExplain(explain === k ? null : k);
@@ -95,10 +97,16 @@ export default function Construct() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  // Tap-to-explain + the expandable guide.
+  // Tap-to-explain (click pins; hover previews on desktop) + the expandable guide.
   const [explain, setExplain] = useState(null);
+  const [hover, setHover] = useState(null);
   const [guideOpen, setGuideOpen] = useState(false);
-  const info = (k) => <Info k={k} explain={explain} setExplain={setExplain} />;
+  const shown = hover || explain; // hover previews; click keeps it open
+  const closeExplain = () => {
+    setExplain(null);
+    setHover(null);
+  };
+  const info = (k) => <Info k={k} explain={explain} setExplain={setExplain} setHover={setHover} />;
 
   const handleConnect = async () => {
     setBusy(true);
@@ -277,8 +285,8 @@ export default function Construct() {
             />
           </div>
 
-          {EXPLAIN[explain]?.group === "output" && (
-            <ExplainNote k={explain} onClose={() => setExplain(null)} />
+          {EXPLAIN[shown]?.group === "output" && (
+            <ExplainNote k={shown} onClose={closeExplain} />
           )}
 
           <div className="cap-readout">
@@ -355,8 +363,8 @@ export default function Construct() {
             />
           ))}
 
-          {EXPLAIN[explain]?.group === "input" && (
-            <ExplainNote k={explain} onClose={() => setExplain(null)} />
+          {EXPLAIN[shown]?.group === "input" && (
+            <ExplainNote k={shown} onClose={closeExplain} />
           )}
 
           <button
