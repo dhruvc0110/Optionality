@@ -10,6 +10,8 @@ const CLIENT_ID =
   "406072501862-6albj6a2cnajv6deoo63g9rnn275enfl.apps.googleusercontent.com";
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 const FILE_NAME = "optionality-positions.json";
+const FOLDER_NAME = "Optionality";
+const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 let accessToken = null;
 
@@ -38,10 +40,40 @@ export function connectDrive() {
 
 const authHeaders = () => ({ Authorization: "Bearer " + accessToken });
 
-async function findFileId() {
-  const q = encodeURIComponent(`name='${FILE_NAME}' and trashed=false`);
+// Find the app's "Optionality" folder (null if it doesn't exist yet).
+async function findFolderId() {
+  const q = encodeURIComponent(
+    `name='${FOLDER_NAME}' and mimeType='${FOLDER_MIME}' and trashed=false`
+  );
   const r = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`,
+    `https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id)`,
+    { headers: authHeaders() }
+  );
+  if (!r.ok) throw new Error("Drive lookup failed (" + r.status + ")");
+  const j = await r.json();
+  return j.files && j.files[0] ? j.files[0].id : null;
+}
+
+// Find the folder, creating it if needed (used on save).
+async function ensureFolderId() {
+  const existing = await findFolderId();
+  if (existing) return existing;
+  const r = await fetch("https://www.googleapis.com/drive/v3/files", {
+    method: "POST",
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ name: FOLDER_NAME, mimeType: FOLDER_MIME }),
+  });
+  if (!r.ok) throw new Error("Drive folder create failed (" + r.status + ")");
+  return (await r.json()).id;
+}
+
+// Find the positions file inside the given folder (null if not there).
+async function findFileId(folderId) {
+  const q = encodeURIComponent(
+    `name='${FILE_NAME}' and '${folderId}' in parents and trashed=false`
+  );
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id)`,
     { headers: authHeaders() }
   );
   if (!r.ok) throw new Error("Drive lookup failed (" + r.status + ")");
@@ -51,7 +83,9 @@ async function findFileId() {
 
 // Returns the array of saved positions (empty if none yet).
 export async function loadPositions() {
-  const id = await findFileId();
+  const folderId = await findFolderId();
+  if (!folderId) return [];
+  const id = await findFileId(folderId);
   if (!id) return [];
   const r = await fetch(
     `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
@@ -66,10 +100,11 @@ export async function loadPositions() {
   }
 }
 
-// Writes the positions array, creating the file on first save.
+// Writes the positions array into the Optionality folder, creating both on first save.
 export async function savePositions(positions) {
   const body = JSON.stringify(positions, null, 2);
-  const id = await findFileId();
+  const folderId = await ensureFolderId();
+  const id = await findFileId(folderId);
   if (id) {
     const r = await fetch(
       `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`,
@@ -78,7 +113,7 @@ export async function savePositions(positions) {
     if (!r.ok) throw new Error("Drive save failed (" + r.status + ")");
   } else {
     const boundary = "optionality" + Date.now();
-    const metadata = { name: FILE_NAME, mimeType: "application/json" };
+    const metadata = { name: FILE_NAME, mimeType: "application/json", parents: [folderId] };
     const multipart =
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
       JSON.stringify(metadata) +
