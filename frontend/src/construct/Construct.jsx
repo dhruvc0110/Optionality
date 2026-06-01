@@ -26,6 +26,54 @@ const legDesc = (l) =>
     ? "100 shares"
     : `${l.kind === "call" ? "CALL" : "PUT"} $${l.strike}`;
 
+// Plain-language explanations, reused by both the tap-to-explain notes and the
+// expandable guide. group: "input" = something you set · "output" = computed.
+const EXPLAIN = {
+  spot: { label: "Current price (spot)", group: "input", text: "Where the stock trades right now. Every number is measured against it. You set it here; once broker data is connected, it'll fill in automatically." },
+  days: { label: "Days to expiry", group: "input", text: "How long until the option's deadline. More days means more time value — and so a bigger premium." },
+  vol: { label: "Volatility", group: "input", text: "How much the stock is assumed to swing over a year. This is an assumption you set — NOT live market data yet (that arrives when broker data is connected). Higher volatility → bigger premium." },
+  rate: { label: "Risk-free rate", group: "input", text: "The baseline interest rate the pricing model uses (think short-term government bonds). It only nudges the numbers slightly." },
+  account: { label: "Account size", group: "input", text: "Your hypothetical account. It does NOT affect pricing — it's used only to judge whether a trade fits: the capital it needs, the % of your account, and how many you could afford." },
+  strike: { label: "Strike", group: "input", text: "A price you lock in with the option — the level you'd buy or sell at. You choose it, and it's the main lever on a trade's risk and reward." },
+  premium: { label: "Net premium / credit", group: "output", text: "The cash for the option legs. A credit (green) means you collect money up front for selling options; a debit (red) means you pay it. It's the leg premiums × 100 shares." },
+  maxGain: { label: "Max gain", group: "output", text: "The most the trade can make at expiry, for one contract. 'Unlimited ↑' means the upside isn't capped." },
+  maxLoss: { label: "Max loss", group: "output", text: "The most the trade can lose at expiry, for one contract. With a hard floor it's fixed in writing; with a soft floor an overnight gap can push past it." },
+  breakeven: { label: "Breakeven", group: "output", text: "The stock price at expiry where you come out even. Move past it in your favour and you're in profit." },
+  delta: { label: "Delta", group: "output", text: "Roughly how many shares of exposure you carry — how much the position gains or loses for each $1 the stock moves, near today's price." },
+  theta: { label: "Theta", group: "output", text: "Time decay: how much the position gains or loses per day from time passing alone. Positive means time is working for you." },
+  vega: { label: "Vega", group: "output", text: "Volatility sensitivity: how much you gain or lose if assumed volatility rises by 1%. Negative means rising volatility hurts this trade." },
+  capital: { label: "Capital required", group: "output", text: "The cash to actually put the trade on — the shares net of option cash, or the cash at risk for an options-only trade. Compared with your account size to see if it fits." },
+};
+
+function Info({ k, explain, setExplain }) {
+  return (
+    <button
+      className="info-btn"
+      aria-label="Explain"
+      onClick={(e) => {
+        e.stopPropagation();
+        setExplain(explain === k ? null : k);
+      }}
+    >
+      i
+    </button>
+  );
+}
+
+function ExplainNote({ k, onClose }) {
+  const e = EXPLAIN[k];
+  if (!e) return null;
+  return (
+    <div className="explain-note">
+      <div className="explain-note-head">
+        <strong>{e.label}</strong>
+        <button onClick={onClose} aria-label="Close">×</button>
+      </div>
+      <p>{e.text}</p>
+    </div>
+  );
+}
+
 export default function Construct() {
   const [key, setKey] = useState("collar");
   const [account, setAccount] = useState(25000);
@@ -46,6 +94,11 @@ export default function Construct() {
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+
+  // Tap-to-explain + the expandable guide.
+  const [explain, setExplain] = useState(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const info = (k) => <Info k={k} explain={explain} setExplain={setExplain} />;
 
   const handleConnect = async () => {
     setBusy(true);
@@ -148,6 +201,32 @@ export default function Construct() {
         ))}
       </div>
 
+      <button className="guide-toggle" onClick={() => setGuideOpen((o) => !o)}>
+        {guideOpen ? "▾" : "▸"} What am I looking at? — every input and number explained
+      </button>
+      {guideOpen && (
+        <div className="guide">
+          <div className="guide-group">What you set (inputs)</div>
+          {Object.entries(EXPLAIN)
+            .filter(([, e]) => e.group === "input")
+            .map(([k, e]) => (
+              <div className="guide-item" key={k}>
+                <strong>{e.label}</strong>
+                <p>{e.text}</p>
+              </div>
+            ))}
+          <div className="guide-group">What the app computes (outputs)</div>
+          {Object.entries(EXPLAIN)
+            .filter(([, e]) => e.group === "output")
+            .map(([k, e]) => (
+              <div className="guide-item" key={k}>
+                <strong>{e.label}</strong>
+                <p>{e.text}</p>
+              </div>
+            ))}
+        </div>
+      )}
+
       <div className="sim-grid">
         <div className="sim-chart-card">
           <div className="sim-chart-head">
@@ -170,33 +249,41 @@ export default function Construct() {
               label={np < 0 ? "Net credit" : "Net premium"}
               value={money(Math.abs(np)) + (np < 0 ? " in" : " out")}
               tone={np < 0 ? "#3fb950" : "#f85149"}
+              info={info("premium")}
             />
-            <StatPill label="Max gain" value={money(built.maxGain)} tone="#3fb950" />
-            <StatPill label="Max loss" value={money(built.maxLoss)} tone="#f85149" />
+            <StatPill label="Max gain" value={money(built.maxGain)} tone="#3fb950" info={info("maxGain")} />
+            <StatPill label="Max loss" value={money(built.maxLoss)} tone="#f85149" info={info("maxLoss")} />
             <StatPill
               label={built.breakevens.length > 1 ? "Breakevens" : "Breakeven"}
               value={built.breakevens.length ? built.breakevens.map((b) => `$${b}`).join(" / ") : "—"}
               tone="#e8b339"
+              info={info("breakeven")}
             />
           </div>
 
           <div className="greeks-row">
-            <Greek label="Delta" value={Math.round(built.greeks.delta)} hint="≈ shares of exposure" />
+            <Greek label="Delta" value={Math.round(built.greeks.delta)} hint="≈ shares of exposure" info={info("delta")} />
             <Greek
               label="Theta"
               value={`${built.greeks.theta >= 0 ? "+" : "−"}$${Math.abs(built.greeks.theta).toFixed(1)}`}
               hint="$ / day from time"
+              info={info("theta")}
             />
             <Greek
               label="Vega"
               value={`${built.greeks.vega >= 0 ? "+" : "−"}$${Math.abs(built.greeks.vega).toFixed(1)}`}
               hint="$ per 1% vol"
+              info={info("vega")}
             />
           </div>
 
+          {EXPLAIN[explain]?.group === "output" && (
+            <ExplainNote k={explain} onClose={() => setExplain(null)} />
+          )}
+
           <div className="cap-readout">
             <div className="cap-line">
-              <span>Capital required</span>
+              <span>Capital required {info("capital")}</span>
               <strong style={{ color: overBudget ? "#f85149" : "#e6ebf2" }}>
                 ${Math.round(cap).toLocaleString()}
               </strong>
@@ -244,13 +331,13 @@ export default function Construct() {
 
         <div className="sim-controls">
           <div className="ctrl-head">The market</div>
-          <Slider label="Current price" val={market.spot} suffix="" prefix="$" min={50} max={200} step={1} onChange={(v) => setM("spot", v)} tone="#58a6ff" />
-          <Slider label="Days to expiry" val={market.days} suffix=" d" prefix="" min={7} max={365} step={1} onChange={(v) => setM("days", v)} />
-          <Slider label="Volatility" val={Math.round(market.vol * 100)} suffix="%" prefix="" min={5} max={120} step={1} onChange={(v) => setM("vol", v / 100)} />
-          <Slider label="Risk-free rate" val={+(market.rate * 100).toFixed(2)} suffix="%" prefix="" min={0} max={8} step={0.25} onChange={(v) => setM("rate", v / 100)} />
+          <Slider label="Current price" val={market.spot} suffix="" prefix="$" min={50} max={200} step={1} onChange={(v) => setM("spot", v)} tone="#58a6ff" info={info("spot")} />
+          <Slider label="Days to expiry" val={market.days} suffix=" d" prefix="" min={7} max={365} step={1} onChange={(v) => setM("days", v)} info={info("days")} />
+          <Slider label="Volatility" val={Math.round(market.vol * 100)} suffix="%" prefix="" min={5} max={120} step={1} onChange={(v) => setM("vol", v / 100)} info={info("vol")} />
+          <Slider label="Risk-free rate" val={+(market.rate * 100).toFixed(2)} suffix="%" prefix="" min={0} max={8} step={0.25} onChange={(v) => setM("rate", v / 100)} info={info("rate")} />
 
           <div className="ctrl-head" style={{ marginTop: 18 }}>Your account</div>
-          <Slider label="Account size" val={account} prefix="$" suffix="" min={5000} max={50000} step={1000} onChange={setAccount} tone="#3fb950" />
+          <Slider label="Account size" val={account} prefix="$" suffix="" min={5000} max={50000} step={1000} onChange={setAccount} tone="#3fb950" info={info("account")} />
 
           <div className="ctrl-head" style={{ marginTop: 18 }}>Your strikes</div>
           {def.strikes.map((s) => (
@@ -264,8 +351,13 @@ export default function Construct() {
               max={200}
               step={1}
               onChange={(v) => setStrike(s.key, v)}
+              info={info("strike")}
             />
           ))}
+
+          {EXPLAIN[explain]?.group === "input" && (
+            <ExplainNote k={explain} onClose={() => setExplain(null)} />
+          )}
 
           <button
             className="reset"
@@ -318,10 +410,13 @@ export default function Construct() {
   );
 }
 
-function StatPill({ label, value, tone }) {
+function StatPill({ label, value, tone, info }) {
   return (
     <div className="pill">
-      <span className="pill-label">{label}</span>
+      <span className="pill-label">
+        {label}
+        {info}
+      </span>
       <span className="pill-value" style={{ color: tone }}>
         {value}
       </span>
@@ -329,21 +424,27 @@ function StatPill({ label, value, tone }) {
   );
 }
 
-function Greek({ label, value, hint }) {
+function Greek({ label, value, hint, info }) {
   return (
     <div className="greek">
       <span className="greek-val">{value}</span>
-      <span className="greek-label">{label}</span>
+      <span className="greek-label">
+        {label}
+        {info}
+      </span>
       <span className="greek-hint">{hint}</span>
     </div>
   );
 }
 
-function Slider({ label, val, min, max, step, onChange, prefix = "", suffix = "", tone = "#e8b339" }) {
+function Slider({ label, val, min, max, step, onChange, prefix = "", suffix = "", tone = "#e8b339", info }) {
   return (
     <div className="ctrl">
       <div className="ctrl-top">
-        <label>{label}</label>
+        <label>
+          {label}
+          {info}
+        </label>
         <span className="ctrl-val" style={{ color: tone }}>
           {prefix}
           {val}

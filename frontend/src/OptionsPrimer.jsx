@@ -1106,6 +1106,25 @@ const CSS = `
 .pos-del{flex:none;background:none;border:1px solid var(--line);color:var(--dim);border-radius:7px;
   width:30px;height:30px;font-size:17px;line-height:1;cursor:pointer;transition:.16s;}
 .pos-del:hover:not(:disabled){border-color:var(--red);color:var(--red);}
+/* tap-to-explain + guide */
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;
+  border-radius:50%;border:1px solid var(--dim);background:none;color:var(--dim);font-size:9px;font-style:italic;
+  font-family:var(--display);line-height:1;cursor:pointer;padding:0;vertical-align:middle;flex:none;}
+.info-btn:hover{border-color:var(--gold);color:var(--gold);}
+.explain-note{margin-top:12px;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.25);
+  border-radius:10px;padding:11px 13px;}
+.explain-note-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.explain-note-head strong{font-size:13px;color:var(--ink);font-family:var(--display);}
+.explain-note-head button{background:none;border:none;color:var(--dim);font-size:17px;line-height:1;cursor:pointer;padding:0;}
+.explain-note p{margin:5px 0 0;color:var(--mut);font-size:12.5px;line-height:1.55;}
+.guide-toggle{width:100%;text-align:left;background:none;border:1px dashed var(--line);color:var(--mut);
+  border-radius:9px;padding:10px 13px;font-family:var(--body);font-size:12.5px;cursor:pointer;margin:0 0 18px;transition:.16s;}
+.guide-toggle:hover{border-color:#2a3344;color:var(--ink);}
+.guide{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 16px 14px;margin:0 0 18px;}
+.guide-group{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin:14px 0 2px;}
+.guide-item{margin:10px 0;}
+.guide-item strong{font-size:13.5px;color:var(--ink);font-family:var(--display);}
+.guide-item p{margin:3px 0 0;color:var(--mut);font-size:12.5px;line-height:1.55;}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;
