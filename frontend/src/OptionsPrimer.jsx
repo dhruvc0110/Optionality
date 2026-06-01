@@ -384,106 +384,100 @@ export function PayoffChart({ data, bes, spot = null, height = 260, compact = fa
 -----------------------------------------------------------------*/
 const LESSON = [
   {
-    title: "Start here: the price, and betting on it",
-    body: "A share of a company trades at a live price — call it the spot price, what it costs right now. If you think it'll go up, you're 'bullish'; if down, 'bearish'. Options are simply a way to bet on that direction (or to protect yourself) for a small, known cost — instead of buying the shares outright.",
-    aside: "Almost everything that follows — strikes, premiums, profit, loss — is measured against that one live number: where the stock is right now.",
+    title: "Let's start with a stock you're watching",
+    body: "Picture one company you've had your eye on. Let's call it Harborview, and right now its shares trade around $100 — that's just the going rate, the price someone will pay you for a share this very minute. We call it the spot price, and we'll follow Harborview the whole way through. You've got a feeling it's going somewhere. The obvious move is to buy 100 shares for $10,000 and hope. But that ties up a lot of cash and leaves you fully exposed if you're wrong. There's a gentler door in — and that door is an option.",
+    aside: "Hold onto that picture: Harborview at $100, and your hunch about where it's headed. Every idea in this primer comes back to it. And the cards over in the Reckoner? Those are just named versions of the moves we're about to learn.",
     panel: {
-      label: "The number everything hangs on",
-      items: [
-        { text: "Spot price = what the stock trades at this moment." },
-        { text: "Up = bullish. Down = bearish." },
-        { text: "An option lets you take a position for far less than buying 100 shares." },
+      label: "The two words you'll hear",
+      prose: [
+        "If you think Harborview will climb, you're feeling bullish. If you think it'll slide, you're bearish. That's the whole vocabulary for now.",
+        "An option simply lets you act on that feeling — for a fraction of the $10,000 it'd cost to buy the shares outright, and with your worst case known before you start.",
       ],
     },
   },
   {
-    title: "What an option actually is",
-    body: "An option is a contract. It gives you the RIGHT — but never the obligation — to buy or sell 100 shares of one stock at a fixed price, on or before a set date. For that right, the buyer pays the seller a one-time fee called the premium.",
-    aside: "Think of a deposit on a house. You pay a little to lock in a price for a while. If the deal makes sense later, you use it. If not, you walk away — losing only the deposit.",
+    title: "So what is an option, really?",
+    body: "An option is a small agreement. For a one-time fee, it hands you the right — but never the obligation — to buy (or sell) 100 shares of Harborview at a price you lock in today, any time before a deadline you choose. If your hunch pays off, you use the agreement. If it doesn't, you simply let it expire and you're only ever out that one fee. That's the magic: you get to be wrong cheaply.",
+    aside: "It's a lot like putting a deposit down on a house. You pay a little now to lock in the price for a while. If it turns out to be a great deal, you go through with it. If not, you walk away — and all you've lost is the deposit. The chart beside this is exactly that bet; tap 'Tinker with this' to feel it move.",
     demo: "longCall",
   },
   {
-    title: "The four ingredients",
-    body: "Every option is fully described by four things. Get these four and you can read any option quote in the world.",
-    aside: "When someone says 'I bought the AAPL 200 calls for June at $5', that's all four: underlying AAPL, strike 200, expiry June, premium $5.",
+    title: "The four things that describe any option",
+    body: "Every option ever traded is just four pieces of information. Once you can name all four, you can read any option anyone quotes you — no jargon left to hide behind. Let's put Harborview into them.",
+    aside: "So if a friend says 'I bought the Harborview 110 calls for next month at $4', you now understand them completely — and that's all there is to it.",
     panel: {
-      label: "Read any option in four parts",
-      items: [
-        { text: "Underlying — which stock the contract is on." },
-        { text: "Strike — the locked-in price you can buy or sell at." },
-        { text: "Expiry — the deadline; after it, the contract is gone." },
-        { text: "Premium — the price you pay (or collect) for the contract." },
+      label: "Harborview, in four parts",
+      prose: [
+        "The underlying is simply which stock we're talking about — Harborview. The strike is the price you've locked in, say $110. The expiry is your deadline — after it, the agreement is gone for good.",
+        "And the premium is the fee itself — the few dollars per share you pay to hold this right (or collect, if you're the one selling it). Underlying, strike, expiry, premium. That's the entire language.",
       ],
     },
   },
   {
-    title: "In, at, or out of the money",
-    body: "'Moneyness' just asks: is the deal worth using right now? A $100-strike CALL is in-the-money when the stock is above $100 (you could buy cheap and sell high), and out-of-the-money below it. For a PUT it's the reverse.",
-    aside: "Out-of-the-money options are cheaper because they're bets that haven't paid off yet — they only have value if the stock moves your way before the deadline.",
+    title: "Is the deal worth using yet?",
+    body: "Here's a question you'll ask constantly: if I could use my option right now, would it be worth anything? Say you hold a Harborview $100 call — the right to buy at $100. If the stock is sitting at $108, that right is clearly worth using: buy at $100, it's worth $108. We say it's in the money. If the stock is down at $95, using it would be silly — that's out of the money. Right at $100, it's at the money. (For a put — the right to sell — it's the mirror image.)",
+    aside: "This is why far-away options are cheap: an out-of-the-money option is a bet that simply hasn't come good yet. It's only worth something if Harborview actually moves your way before the clock runs out.",
     demo: "longCall",
   },
   {
-    title: "How the premium is priced",
-    body: "A premium is two parts added together. INTRINSIC value is the part that's already real money — how deep in-the-money it is. TIME value is the price of hope: the chance the stock moves further before expiry. More time left, and more 'wobble' (volatility) in the stock, both make time value — and so the premium — bigger.",
-    aside: "That's why an option slowly bleeds value as expiry nears even if the stock sits still — the hope is running out. It's called time decay. (Open the Simulator to see a premium split into intrinsic + time.)",
+    title: "Why does the option cost what it costs?",
+    body: "A premium is really two things glued together. Part of it is real, here-and-now value — if your $100 call is already worth $8 because the stock's at $108, that $8 is the solid part. The rest is the price of hope: the chance Harborview keeps moving your way before the deadline. Give it more time, or pick a stock that swings around more, and that hope is worth more — so the premium goes up.",
+    aside: "And here's the catch that trips up beginners: that hope quietly drains away as the deadline nears, even if the stock does nothing. It's called time decay, and it's why options can fade to nothing while you wait. Open the Simulator and you'll see a premium split into those two parts live.",
     demo: "longCall",
   },
   {
-    title: "Where you break even",
-    body: "Buying isn't free, so 'the stock went my way' isn't the same as 'I made money'. Pay $5 for a $100 call and you only profit ABOVE $105 — the strike plus the premium. For a put it's the strike MINUS the premium. The move has to clear both the strike and what you paid.",
-    aside: "In the Simulator, drag 'Current price' and watch the break-even line: it shows exactly how far the stock must travel from today before you're in the green.",
+    title: "When do you actually start making money?",
+    body: "Going the right way isn't the same as making money — because you paid to get in. Say you bought that Harborview $100 call for $5. The stock climbing to $103 still leaves you behind: you paid $5, so you don't truly break even until it clears $105 (the strike plus what you paid). Above $105 you're finally in the green. For a put, it flips: strike minus the premium. The move has to beat both the strike and your cost.",
+    aside: "This is the moment the Reckoner and the Simulator click together. Pick any card in the Reckoner, tap 'Open in simulator', then drag the 'Current price' slider — the break-even line shows you exactly how far Harborview has to travel from today before the trade pays off.",
     demo: "longCall",
   },
   {
-    title: "Expiry, exercise & settlement",
-    body: "Options have deadlines. Standard monthly options expire the third Friday of the month; 'weeklies' expire most Fridays. At expiry, an in-the-money option is automatically used (exercised); an out-of-the-money one simply expires worthless.",
-    aside: "'Assignment' is the seller's side of exercise — they get called on to honour the contract. Single-stock options settle in actual shares (100 change hands); many index options settle in cash instead.",
+    title: "The deadline, and what happens at it",
+    body: "Every option has an expiry date, and most of the action clusters on Fridays. The standard 'monthly' options expire the third Friday of the month; the newer 'weeklies' expire most Fridays in between. When that day comes, the outcome is automatic — there's nothing dramatic you need to do.",
+    aside: "If your option is in the money at expiry, it's used automatically and the shares change hands. If it's out of the money, it just quietly disappears and you keep nothing — your loss was only ever the premium.",
     panel: {
-      label: "What happens at the deadline",
-      items: [
-        { text: "Monthly: 3rd Friday. Weeklies: most Fridays." },
-        { text: "In-the-money → auto-exercised (shares/cash change hands)." },
-        { text: "Out-of-the-money → expires worthless; you keep nothing." },
-        { text: "Seller being exercised against = 'assignment'." },
+      label: "What happens when the clock runs out",
+      prose: [
+        "In the money at the end? The option is exercised for you — for a single stock like Harborview, 100 shares actually change hands. (Many index options just settle up in cash instead.)",
+        "Out of the money? It expires worthless and you simply move on. One more word: when a seller gets called on to honour a contract, that's called assignment — it's just the other side of someone exercising.",
       ],
     },
   },
   {
-    title: "Calls vs. Puts",
-    body: "A CALL is the right to BUY at the strike — you want it when you expect the stock to rise. A PUT is the right to SELL at the strike — you want it when you expect the stock to fall, or to insure shares you already own.",
-    aside: "Two words to remember: Call UP, Put DOWN. A call gains value as the stock climbs; a put gains value as it drops.",
+    title: "Calls and puts, side by side",
+    body: "There are only two kinds of option, and you've now met one of them. A call is the right to buy at the strike — you reach for it when you think Harborview is heading up. A put is the right to sell at the strike — you want it when you think the stock is heading down, or when you simply want to insure shares you already own against a fall.",
+    aside: "An easy way to never mix them up: Call UP, Put DOWN. A call gains value as the stock climbs; a put gains value as it drops. The chart here is a put — watch how it leans the opposite way to the call you saw earlier.",
     demo: "longPut",
   },
   {
-    title: "Two sides: buying vs. selling",
-    body: "When you BUY an option, your loss is capped at the premium — that's the worst case, full stop — while your gain can be large. The SELLER's math is the mirror image: the most they can make is the premium they collected, but their loss can be far bigger. Buyers pay for a chance; sellers collect income and carry the tail risk.",
-    aside: "Most options expire worthless, which is why selling premium feels like easy income — right up until the month a stock gaps and the seller's 'small' premium meets a very large loss.",
+    title: "Someone's on the other side of every trade",
+    body: "So far you've been the buyer, paying a premium for a chance. But every option you buy, someone else sells — and their world is the mirror of yours. As a buyer, the most you can lose is the premium, while your upside is large. As a seller, you pocket that premium as income up front — but now the big potential loss is yours to carry. Selling is how people earn steady income from options; it just comes with a heavier tail.",
+    aside: "This is the heart of the whole tool's risk warning. Selling premium feels like found money, month after month — right until the one month a stock gaps overnight and that 'small' premium runs into a very large loss.",
     demo: "cashSecuredPut",
   },
   {
-    title: "Rolling a position",
-    body: "You don't have to wait for expiry. 'Rolling' means closing your current option early and opening a later or different one in the same move — to buy more time, lock in a gain, or repair a trade that's going against you. You either pay a little (a debit) or collect a little (a credit) to do it.",
-    aside: "Rolling isn't magic. You're paying or collecting to reset the clock — useful, but every roll is another small bet, not a way to erase a bad one.",
+    title: "You don't have to just wait — you can roll",
+    body: "Once you're in a trade, you're not stuck with it until expiry. 'Rolling' is the move where you close your current option early and open a fresh one — usually further out in time, or at a new strike — in a single step. People roll to buy more time for a slow thesis, to lock in a gain, or to nurse a position that's drifting against them. Depending on the prices, you'll either pay a little or collect a little to do it.",
+    aside: "Just keep your eyes open: rolling isn't a rescue button. You're paying or collecting to reset the clock, and every roll is another fresh bet — handy, but not a way to undo a bad call.",
     panel: {
-      label: "Why people roll",
-      items: [
-        { text: "Out (later expiry) — buy more time for the thesis to work." },
-        { text: "Up/down (new strike) — chase the stock or lock in a gain." },
-        { text: "It's two trades at once: close the old, open the new." },
+      label: "What rolling really is",
+      prose: [
+        "Think of it as two trades stapled together: you close the option you hold, and in the same breath open a new one — later in time, or at a different strike.",
+        "Roll 'out' to give your idea more runway. Roll 'up' or 'down' to chase the stock or bank a profit. Either way it's a choice, not a fix.",
       ],
     },
   },
   {
-    title: "When it worked — and when it blew up",
-    body: "The mechanics are neutral; outcomes are not. A bought put is a HARD floor — your loss is contractually capped even in a crash. A naked sold option is only a SOFT floor — fine in calm markets, until a gap punches straight through it. Same option chain, very different nights' sleep.",
-    aside: "Hard floors cost you a little every month. Soft floors pay you a little every month — until the one month they don't. That trade-off is the spine of this whole tool.",
+    title: "When this worked — and when it blew up",
+    body: "The mechanics you've learned are neutral; what people do with them is not. The single thing that decides how you sleep at night is whether you own a bought put underneath your position. With one, you have a hard floor — your worst case is fixed in writing, even if the stock craters overnight. Without one, while you're selling premium, you only have a soft floor — comfortable in calm weather, until a gap blows straight through it.",
+    aside: "Here's the trade in one line: a hard floor costs you a little every month, like insurance. A soft floor pays you a little every month — until the one month it doesn't. That single choice is the spine of everything this tool helps you build over in Construct.",
     panel: {
-      label: "Real and illustrative",
+      label: "Real stories, and one to picture",
       items: [
-        { tag: "worked", text: "March 2020: as markets fell ~34% in weeks, investors holding protective puts kept a hard floor — their downside was capped while everything else cratered." },
-        { tag: "failed", text: "Jan 2021: traders short GameStop options were on the soft-floor side when it rocketed from ~$20 to ~$480 — 'small' premiums met catastrophic losses." },
-        { tag: "failed", text: "Feb 2018 ('volmageddon'): short-volatility products lost ~96% in a single day when calm flipped to chaos overnight." },
-        { tag: "note", text: "Illustrative: a retiree sells covered calls for steady income; a 40% rally gets the shares called away — real income, but a capped, missed run." },
+        { tag: "worked", text: "March 2020: as markets fell about 34% in a matter of weeks, the folks holding protective puts barely flinched — their floor was written into the contract." },
+        { tag: "failed", text: "January 2021: traders who'd sold GameStop options for 'easy' premium were on the soft-floor side when it rocketed from roughly $20 to nearly $480. The small premiums met enormous losses." },
+        { tag: "failed", text: "February 2018: a popular bet against market 'wobble' lost about 96% in a single day when calm flipped to chaos overnight — a soft floor with nothing underneath." },
+        { tag: "note", text: "Picture this: a retiree quietly sells covered calls for income, then the stock rips 40% higher and the shares get called away. Real income earned — but a big run left on the table." },
       ],
     },
   },
@@ -515,25 +509,34 @@ function StatPill({ label, value, tone }) {
 const TAG_DOT = { worked: "#3fb950", failed: "#f85149", note: "#58a6ff" };
 const TAG_TEXT = { worked: "Worked", failed: "Blew up", note: "Example" };
 
-// Takeaway card shown for lesson steps that have no payoff chart.
+// Side card shown for lesson steps that have no payoff chart. Renders either
+// flowing prose paragraphs (panel.prose) or tagged story items (panel.items).
 function LessonPanel({ panel }) {
   return (
     <div className="lpanel">
       <div className="demo-label">{panel.label}</div>
-      <ul className="lpanel-list">
-        {panel.items.map((it, i) => (
-          <li key={i} className={it.tag ? "lpanel-item tagged" : "lpanel-item"}>
-            {it.tag ? (
-              <span className="lpanel-tag" style={{ color: TAG_DOT[it.tag] }}>
-                {TAG_TEXT[it.tag]}
-              </span>
-            ) : (
-              <span className="lpanel-bullet" />
-            )}
-            <span className="lpanel-text">{it.text}</span>
-          </li>
-        ))}
-      </ul>
+      {panel.prose ? (
+        <div className="lpanel-prose">
+          {panel.prose.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+        </div>
+      ) : (
+        <ul className="lpanel-list">
+          {panel.items.map((it, i) => (
+            <li key={i} className={it.tag ? "lpanel-item tagged" : "lpanel-item"}>
+              {it.tag ? (
+                <span className="lpanel-tag" style={{ color: TAG_DOT[it.tag] }}>
+                  {TAG_TEXT[it.tag]}
+                </span>
+              ) : (
+                <span className="lpanel-bullet" />
+              )}
+              <span className="lpanel-text">{it.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -656,10 +659,14 @@ export default function OptionsPrimer() {
       {section === "reckoner" && (
         <section className="wrap fade">
           <p className="lede">
-            Seven plays, at a glance. Each one is a different answer to a single question:{" "}
-            <em>how much risk will I trade for how much return?</em> Green floors are{" "}
-            <strong style={{ color: "#3fb950" }}>hard</strong> (survive a crash); amber are{" "}
-            <strong style={{ color: "#e8b339" }}>soft</strong> (a gap can break them).
+            These are the same moves from the Primer — Harborview and all — laid out as quick
+            reference cards. Each one is really an answer to a single question:{" "}
+            <em>how much risk will I trade for how much return?</em> The colour tells you the most
+            important thing at a glance: a{" "}
+            <strong style={{ color: "#3fb950" }}>hard</strong> floor survives a crash, a{" "}
+            <strong style={{ color: "#e8b339" }}>soft</strong> one can break in an overnight gap.
+            Found one you like? Tap <em>Open in simulator</em> to drag the sliders and watch it
+            move before you ever risk a cent.
           </p>
           <div className="grid">
             {STRAT_KEYS.map((k, i) => {
@@ -1083,6 +1090,9 @@ const CSS = `
   text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
 .lpanel-text{color:var(--mut);font-size:13px;line-height:1.45;}
 .lpanel-item.tagged .lpanel-text{color:var(--ink);opacity:.92;}
+.lpanel-prose{margin-top:12px;}
+.lpanel-prose p{color:var(--mut);font-size:13.5px;line-height:1.6;margin:0 0 11px;}
+.lpanel-prose p:last-child{margin-bottom:0;}
 /* simulator "now" readout + premium split */
 .now-readout{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;}
 .now-readout p{margin:0;color:var(--mut);font-size:13px;line-height:1.55;}
