@@ -1076,6 +1076,12 @@ const CSS = `
 .leg-desc{flex:1;color:var(--ink);font-family:var(--mono);}
 .leg-prem{color:var(--mut);font-family:var(--mono);}
 .construct-note{color:var(--mut);font-size:12.5px;line-height:1.5;margin:14px 0 0;border-left:2px solid var(--line);padding-left:12px;}
+.cap-readout{margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;}
+.cap-line{display:flex;justify-content:space-between;align-items:baseline;}
+.cap-line span{color:var(--dim);font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;}
+.cap-line strong{font-family:var(--mono);font-size:16px;}
+.cap-note{margin:6px 0 0;color:var(--mut);font-size:12px;line-height:1.5;}
+.cap-note.over{color:#e8a39a;}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;

@@ -27,6 +27,7 @@ const legDesc = (l) =>
 
 export default function Construct() {
   const [key, setKey] = useState("collar");
+  const [account, setAccount] = useState(25000);
   const [market, setMarket] = useState({ spot: 100, days: 90, vol: 0.25, rate: 0.04, q: 0 });
   const [allStrikes, setAllStrikes] = useState(() => {
     const o = {};
@@ -55,6 +56,13 @@ export default function Construct() {
 
   const def = STRATEGY_LIB[key];
   const np = built.netOptionPremium;
+
+  // Capital efficiency for a small account.
+  const cap = built.capitalRequired;
+  const pctOfAccount = account ? (cap / account) * 100 : 0;
+  const contracts = cap > 0 ? Math.floor(account / cap) : 0;
+  const overBudget = cap > account;
+  const heavy = !overBudget && pctOfAccount > 60;
 
   return (
     <section className="wrap fade">
@@ -120,6 +128,20 @@ export default function Construct() {
             />
           </div>
 
+          <div className="cap-readout">
+            <div className="cap-line">
+              <span>Capital required</span>
+              <strong style={{ color: overBudget ? "#f85149" : "#e6ebf2" }}>
+                ${Math.round(cap).toLocaleString()}
+              </strong>
+            </div>
+            <p className={overBudget ? "cap-note over" : "cap-note"}>
+              {overBudget
+                ? `More than your $${account.toLocaleString()} account — too big as one contract. Try cheaper strikes, a smaller account target, or a more capital-efficient structure (spreads cost far less than owning shares).`
+                : `${pctOfAccount.toFixed(0)}% of your $${account.toLocaleString()} account · room for about ${contracts} contract${contracts === 1 ? "" : "s"}.${heavy ? " That's a big chunk for one position." : ""}`}
+            </p>
+          </div>
+
           <div className="legs">
             <div className="legs-head">Legs (priced)</div>
             {built.legs.map((l, i) => (
@@ -156,6 +178,9 @@ export default function Construct() {
           <Slider label="Days to expiry" val={market.days} suffix=" d" prefix="" min={7} max={365} step={1} onChange={(v) => setM("days", v)} />
           <Slider label="Volatility" val={Math.round(market.vol * 100)} suffix="%" prefix="" min={5} max={120} step={1} onChange={(v) => setM("vol", v / 100)} />
           <Slider label="Risk-free rate" val={+(market.rate * 100).toFixed(2)} suffix="%" prefix="" min={0} max={8} step={0.25} onChange={(v) => setM("rate", v / 100)} />
+
+          <div className="ctrl-head" style={{ marginTop: 18 }}>Your account</div>
+          <Slider label="Account size" val={account} prefix="$" suffix="" min={5000} max={50000} step={1000} onChange={setAccount} tone="#3fb950" />
 
           <div className="ctrl-head" style={{ marginTop: 18 }}>Your strikes</div>
           {def.strikes.map((s) => (

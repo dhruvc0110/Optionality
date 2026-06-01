@@ -202,13 +202,28 @@ export function buildStrategy(key, strikes, market) {
     }
   }
 
+  const maxGain = ext.maxPS * CONTRACT;
+  const maxLoss = ext.minPS * CONTRACT;
+
+  // Capital required to put this on (a fair cash figure, not broker-margin exact):
+  //  - with shares: what the shares cost, net of option cash.
+  //  - options only: the cash at risk = |max loss| (e.g. cash secured for a short
+  //    put, or the net debit for a defined-risk spread).
+  const capitalRequired =
+    stockOutlay > 0
+      ? stockOutlay + netOptionPremium
+      : isFinite(maxLoss)
+      ? Math.abs(maxLoss)
+      : Math.max(netOptionPremium, 0);
+
   return {
     meta: def,
     legs,
     netOptionPremium, // $ for the options only (+debit / −credit)
     stockOutlay, // $ to buy the 100 shares, if any
-    maxGain: ext.maxPS * CONTRACT,
-    maxLoss: ext.minPS * CONTRACT,
+    capitalRequired,
+    maxGain,
+    maxLoss,
     breakevens: bes,
     greeks: agg,
     pnlAt: (S) => totalPnL(legs, S) * CONTRACT,
