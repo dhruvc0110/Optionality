@@ -1082,6 +1082,30 @@ const CSS = `
 .cap-line strong{font-family:var(--mono);font-size:16px;}
 .cap-note{margin:6px 0 0;color:var(--mut);font-size:12px;line-height:1.5;}
 .cap-note.over{color:#e8a39a;}
+/* promote-to-live + positions */
+.place-btn{width:100%;margin-top:16px;background:var(--gold);color:#1a1405;border:none;border-radius:9px;
+  padding:12px;font-family:var(--body);font-size:13.5px;font-weight:600;cursor:pointer;transition:.16s;}
+.place-btn:hover:not(:disabled){filter:brightness(1.06);}
+.place-btn:disabled{opacity:.55;cursor:default;}
+.positions{max-width:1080px;margin:18px auto 0;padding:18px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-radius:14px;}
+.pos-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.pos-head span:first-child{font-family:var(--display);font-weight:600;font-size:17px;color:var(--ink);}
+.pos-sub{color:var(--dim);font-size:11.5px;font-family:var(--mono);}
+.connect-btn{margin-top:12px;background:none;border:1px solid var(--blue);color:var(--blue);border-radius:9px;
+  padding:10px 16px;font-family:var(--body);font-size:13px;font-weight:500;cursor:pointer;transition:.16s;}
+.connect-btn:hover:not(:disabled){background:rgba(88,166,255,.08);}
+.connect-btn:disabled{opacity:.55;cursor:default;}
+.pos-msg{margin:12px 0 0;color:var(--mut);font-size:12.5px;}
+.pos-empty{margin:12px 0 0;color:var(--dim);font-size:12.5px;}
+.pos-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;
+  padding-top:12px;border-top:1px solid var(--line);}
+.pos-info{display:flex;flex-direction:column;gap:3px;}
+.pos-info strong{font-family:var(--display);font-size:15px;color:var(--ink);}
+.pos-meta{font-family:var(--mono);font-size:11.5px;color:var(--mut);}
+.pos-del{flex:none;background:none;border:1px solid var(--line);color:var(--dim);border-radius:7px;
+  width:30px;height:30px;font-size:17px;line-height:1;cursor:pointer;transition:.16s;}
+.pos-del:hover:not(:disabled){border-color:var(--red);color:var(--red);}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;

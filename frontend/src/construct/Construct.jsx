@@ -7,6 +7,7 @@ import {
   defaultStrikes,
   buildStrategy,
 } from "../strategies/library.js";
+import { connectDrive, loadPositions, savePositions } from "../storage/googleDrive.js";
 
 const floorColor = (f) =>
   f === "hard" ? "#3fb950" : f === "defined" ? "#58a6ff" : "#e8b339";
@@ -39,6 +40,71 @@ export default function Construct() {
   const setStrike = (sk, v) =>
     setAllStrikes((p) => ({ ...p, [key]: { ...p[key], [sk]: v } }));
   const setM = (field, v) => setMarket((p) => ({ ...p, [field]: v }));
+
+  // Tracked positions, saved to the user's Google Drive.
+  const [positions, setPositions] = useState([]);
+  const [connected, setConnected] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const handleConnect = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await connectDrive();
+      setPositions(await loadPositions());
+      setConnected(true);
+    } catch (e) {
+      setMsg(e.message || "Couldn't connect to Drive.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePlace = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      let current = positions;
+      if (!connected) {
+        await connectDrive();
+        current = await loadPositions(); // pull existing before appending
+        setConnected(true);
+      }
+      const pos = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        strategyKey: key,
+        name: def.name,
+        market: { ...market },
+        strikes: { ...strikes },
+        capitalRequired: Math.round(cap),
+        maxLoss: built.maxLoss,
+        placedAt: new Date().toISOString(),
+      };
+      const next = [pos, ...current];
+      await savePositions(next);
+      setPositions(next);
+      setMsg("Saved to your Drive.");
+    } catch (e) {
+      setMsg(e.message || "Couldn't save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRemove = async (id) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const next = positions.filter((p) => p.id !== id);
+      await savePositions(next);
+      setPositions(next);
+    } catch (e) {
+      setMsg(e.message || "Couldn't update.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const built = useMemo(() => buildStrategy(key, strikes, market), [key, strikes, market]);
 
@@ -170,6 +236,10 @@ export default function Construct() {
             </div>
           )}
           {def.note && <p className="construct-note">{def.note}</p>}
+
+          <button className="place-btn" onClick={handlePlace} disabled={busy}>
+            {busy ? "Working…" : "I placed this — track it"}
+          </button>
         </div>
 
         <div className="sim-controls">
@@ -208,6 +278,41 @@ export default function Construct() {
             Real fills differ; live-market implied volatility comes when broker data is connected.
           </p>
         </div>
+      </div>
+
+      <div className="positions">
+        <div className="pos-head">
+          <span>Your positions</span>
+          <span className="pos-sub">
+            {connected ? "saved to your Google Drive" : "connect Drive to save & sync across devices"}
+          </span>
+        </div>
+        {!connected && (
+          <button className="connect-btn" onClick={handleConnect} disabled={busy}>
+            {busy ? "Connecting…" : "Connect Google Drive"}
+          </button>
+        )}
+        {msg && <p className="pos-msg">{msg}</p>}
+        {connected && positions.length === 0 && (
+          <p className="pos-empty">
+            No tracked positions yet. Build a trade above and tap "I placed this — track it".
+          </p>
+        )}
+        {positions.map((p) => (
+          <div className="pos-row" key={p.id}>
+            <div className="pos-info">
+              <strong>{p.name}</strong>
+              <span className="pos-meta">
+                ${p.market.spot} spot · {p.market.days}d ·{" "}
+                {Object.values(p.strikes).map((s) => `$${s}`).join(" / ")} · cap $
+                {p.capitalRequired.toLocaleString()}
+              </span>
+            </div>
+            <button className="pos-del" onClick={() => handleRemove(p.id)} disabled={busy} aria-label="Remove position">
+              ×
+            </button>
+          </div>
+        ))}
       </div>
     </section>
   );
