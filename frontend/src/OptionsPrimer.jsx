@@ -21,7 +21,9 @@ import {
   BookOpen,
   SlidersHorizontal,
   AlertTriangle,
+  Hammer,
 } from "lucide-react";
+import Construct from "./construct/Construct.jsx";
 
 /* ----------------------------------------------------------------
    PAYOFF ENGINE  (all values per-share; ×100 for one contract)
@@ -283,7 +285,7 @@ const totalPnLAt = (legs, S) => legs.reduce((sum, leg) => sum + legPnL(leg, S), 
 /* ----------------------------------------------------------------
    Small reusable payoff chart
 -----------------------------------------------------------------*/
-function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) {
+export function PayoffChart({ data, bes, spot = null, height = 260, compact = false }) {
   // Gradient split is based on the VISIBLE curve, not the analytic extremes
   // (which can be Infinity for unbounded-upside strategies).
   const vis = data.map((d) => d.pnl);
@@ -540,7 +542,7 @@ function LessonPanel({ panel }) {
    Section <-> URL hash, so the phone back-gesture navigates between
    sections instead of exiting the app.
 -----------------------------------------------------------------*/
-const SECTIONS = ["primer", "reckoner", "sim"];
+const SECTIONS = ["primer", "reckoner", "sim", "construct"];
 const sectionFromHash = () => {
   const h = (window.location.hash || "").replace("#", "");
   return SECTIONS.includes(h) ? h : "primer";
@@ -644,6 +646,9 @@ export default function OptionsPrimer() {
         </button>
         <button className={section === "sim" ? "on" : ""} onClick={() => goSection("sim")}>
           <SlidersHorizontal size={15} /> Simulator
+        </button>
+        <button className={section === "construct" ? "on" : ""} onClick={() => goSection("construct")}>
+          <Hammer size={15} /> Construct
         </button>
       </nav>
 
@@ -907,6 +912,9 @@ export default function OptionsPrimer() {
         </section>
       )}
 
+      {/* ============ CONSTRUCT ============ */}
+      {section === "construct" && <Construct />}
+
       <footer className="ftr">
         Educational tool · payoffs shown at expiration · not investment advice. Options involve
         substantial risk and aren't suitable for every investor.
@@ -1045,6 +1053,22 @@ const CSS = `
 .sim-note em{color:var(--mut);font-style:italic;}
 .ftr{max-width:1080px;margin:36px auto 0;padding:18px 22px 0;border-top:1px solid var(--line);
   color:var(--dim);font-size:11.5px;text-align:center;}
+/* construct — greeks row + legs table */
+.greeks-row{display:flex;gap:10px;margin-top:10px;}
+.greek{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;text-align:left;}
+.greek-val{display:block;font-family:var(--mono);font-weight:600;font-size:15px;color:var(--ink);}
+.greek-label{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-top:2px;}
+.greek-hint{display:block;color:var(--dim);font-size:10.5px;margin-top:1px;}
+.legs{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+.legs-head,.legs-foot{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);}
+.legs-foot{margin-top:8px;text-transform:none;letter-spacing:0;font-family:var(--body);font-size:12px;color:var(--mut);}
+.leg-row{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12.5px;}
+.leg-dir{flex:none;width:42px;font-family:var(--mono);font-size:10px;font-weight:600;border-radius:5px;padding:3px 0;text-align:center;}
+.leg-dir.long{color:#3fb950;border:1px solid rgba(63,185,80,.4);}
+.leg-dir.short{color:#f85149;border:1px solid rgba(248,81,73,.4);}
+.leg-desc{flex:1;color:var(--ink);font-family:var(--mono);}
+.leg-prem{color:var(--mut);font-family:var(--mono);}
+.construct-note{color:var(--mut);font-size:12.5px;line-height:1.5;margin:14px 0 0;border-left:2px solid var(--line);padding-left:12px;}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;
@@ -1070,8 +1094,9 @@ const CSS = `
   .hdr{padding:24px 16px 16px;gap:12px;}
   .hdr-title{font-size:23px;}
   .hdr-sub{font-size:12.5px;}
-  .nav{padding:0 12px;}
-  .nav button{padding:12px 11px;font-size:13px;}
+  .nav{padding:0 8px;gap:2px;}
+  .nav button{padding:11px 7px;font-size:12.5px;gap:5px;}
+  .nav button svg{display:none;}
   .wrap{padding:6px 16px 0;}
   .lede{font-size:14px;}
   .lesson{gap:22px;}
