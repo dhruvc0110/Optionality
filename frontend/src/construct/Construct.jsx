@@ -8,6 +8,7 @@ import {
   buildStrategy,
 } from "../strategies/library.js";
 import { connectDrive, loadPositions, savePositions } from "../storage/googleDrive.js";
+import { computePortfolioRisk } from "../risk/portfolio.js";
 
 const floorColor = (f) =>
   f === "hard" ? "#3fb950" : f === "defined" ? "#58a6ff" : "#e8b339";
@@ -123,11 +124,18 @@ function RiskBar({ pct, cap, fillColor = "#3fb950", overColor = "#f85149" }) {
   );
 }
 
-export default function Construct() {
+export default function Construct({
+  positions,
+  setPositions,
+  connected,
+  setConnected,
+  account,
+  setAccount,
+  riskBudgetPct,
+  setRiskBudgetPct,
+}) {
   const [key, setKey] = useState("collar");
   const [ticker, setTicker] = useState("");
-  const [account, setAccount] = useState(25000);
-  const [riskBudgetPct, setRiskBudgetPct] = useState(15); // soft-floor budget, % of principal
   const [market, setMarket] = useState({ spot: 100, days: 90, vol: 0.25, rate: 0.04, q: 0 });
   const [allStrikes, setAllStrikes] = useState(() => {
     const o = {};
@@ -140,9 +148,7 @@ export default function Construct() {
     setAllStrikes((p) => ({ ...p, [key]: { ...p[key], [sk]: v } }));
   const setM = (field, v) => setMarket((p) => ({ ...p, [field]: v }));
 
-  // Tracked positions, saved to the user's Google Drive.
-  const [positions, setPositions] = useState([]);
-  const [connected, setConnected] = useState(false);
+  // positions / connected / account / riskBudgetPct come from the shell (shared with Monitor).
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -270,35 +276,11 @@ export default function Construct() {
     action: EXPIRY_NOTE[key] || "Expiry day — the options resolve.",
   });
 
-  // ===== Layer 2: the Honesty Engine — portfolio risk from tracked positions =====
-  const RISK = useMemo(() => {
-    if (!positions.length) return null;
-    const rebuilt = positions.map((p) => {
-      const b = buildStrategy(p.strategyKey, p.strikes, p.market);
-      const floor = STRATEGY_LIB[p.strategyKey]?.floor || "soft";
-      const worst = isFinite(b.maxLoss) ? Math.abs(b.maxLoss) : Infinity;
-      return { p, b, floor, worst };
-    });
-    let totalWorst = 0,
-      softWorst = 0,
-      hardWorst = 0;
-    let unbounded = false;
-    for (const r of rebuilt) {
-      if (!isFinite(r.worst)) {
-        unbounded = true;
-        continue;
-      }
-      totalWorst += r.worst;
-      if (r.floor === "soft") softWorst += r.worst;
-      else hardWorst += r.worst;
-    }
-    const gapStress = [0.1, 0.2, 0.35].map((g) => {
-      let pnl = 0;
-      for (const r of rebuilt) pnl += r.b.pnlAt(r.p.market.spot * (1 - g));
-      return { gap: g, pnl };
-    });
-    return { count: positions.length, totalWorst, softWorst, hardWorst, unbounded, gapStress };
-  }, [positions]);
+  // Layer 2 honesty engine — shared computation (also used by the Monitor tab).
+  const RISK = useMemo(
+    () => (positions.length ? computePortfolioRisk(positions) : null),
+    [positions]
+  );
 
   const pct = (v) => (account ? (v / account) * 100 : 0);
 

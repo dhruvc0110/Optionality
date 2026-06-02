@@ -22,8 +22,10 @@ import {
   SlidersHorizontal,
   AlertTriangle,
   Hammer,
+  Activity,
 } from "lucide-react";
 import Construct from "./construct/Construct.jsx";
+import Monitor from "./monitor/Monitor.jsx";
 
 /* ----------------------------------------------------------------
    PAYOFF ENGINE  (all values per-share; ×100 for one contract)
@@ -545,7 +547,7 @@ function LessonPanel({ panel }) {
    Section <-> URL hash, so the phone back-gesture navigates between
    sections instead of exiting the app.
 -----------------------------------------------------------------*/
-const SECTIONS = ["primer", "reckoner", "sim", "construct"];
+const SECTIONS = ["primer", "reckoner", "sim", "construct", "monitor"];
 const sectionFromHash = () => {
   const h = (window.location.hash || "").replace("#", "");
   return SECTIONS.includes(h) ? h : "primer";
@@ -578,6 +580,11 @@ export default function OptionsPrimer() {
   }, []);
   const [stratKey, setStratKey] = useState("longCall");
   const [spot, setSpot] = useState(100); // "where the stock is now" — the anchor for the readout
+  // Shared portfolio state — Construct edits it, Monitor reads it.
+  const [positions, setPositions] = useState([]);
+  const [driveConnected, setDriveConnected] = useState(false);
+  const [account, setAccount] = useState(25000);
+  const [riskBudgetPct, setRiskBudgetPct] = useState(15);
   const [allParams, setAllParams] = useState(() => {
     const o = {};
     for (const k of STRAT_KEYS) o[k] = { ...STRATEGIES[k].defaults };
@@ -652,6 +659,9 @@ export default function OptionsPrimer() {
         </button>
         <button className={section === "construct" ? "on" : ""} onClick={() => goSection("construct")}>
           <Hammer size={15} /> Construct
+        </button>
+        <button className={section === "monitor" ? "on" : ""} onClick={() => goSection("monitor")}>
+          <Activity size={15} /> Monitor
         </button>
       </nav>
 
@@ -920,7 +930,30 @@ export default function OptionsPrimer() {
       )}
 
       {/* ============ CONSTRUCT ============ */}
-      {section === "construct" && <Construct />}
+      {section === "construct" && (
+        <Construct
+          positions={positions}
+          setPositions={setPositions}
+          connected={driveConnected}
+          setConnected={setDriveConnected}
+          account={account}
+          setAccount={setAccount}
+          riskBudgetPct={riskBudgetPct}
+          setRiskBudgetPct={setRiskBudgetPct}
+        />
+      )}
+
+      {/* ============ MONITOR ============ */}
+      {section === "monitor" && (
+        <Monitor
+          positions={positions}
+          setPositions={setPositions}
+          connected={driveConnected}
+          setConnected={setDriveConnected}
+          account={account}
+          riskBudgetPct={riskBudgetPct}
+        />
+      )}
 
       <footer className="ftr">
         Educational tool · payoffs shown at expiration · not investment advice. Options involve
@@ -1175,6 +1208,34 @@ const CSS = `
 .risk-gap{width:100%;border-collapse:collapse;}
 .risk-gap td{border-top:1px solid var(--line);padding:8px 0;font-family:var(--mono);font-size:12.5px;color:var(--ink);}
 .risk-caveat{margin:12px 0 0;color:var(--dim);font-size:11px;line-height:1.5;}
+/* L3 — Monitor dashboard */
+.mon-bar{display:flex;align-items:center;gap:12px;margin:0 0 16px;}
+.health-card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+.health-status{font-family:var(--display);font-weight:600;font-size:26px;line-height:1;}
+.health-sub{color:var(--mut);font-size:12.5px;margin-top:5px;}
+.health-gauges{margin-top:16px;display:flex;flex-direction:column;gap:14px;}
+.gauge-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.gauge-top span{color:var(--mut);font-size:12px;}
+.gauge-top strong{font-family:var(--mono);font-size:13px;}
+.mon-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.mon-grid .greek{flex:1;min-width:140px;}
+.scenario{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+.scenario-head{color:var(--ink);font-size:14px;}
+.scenario-out{display:flex;align-items:baseline;gap:10px;margin:10px 0 14px;}
+.scenario-out strong{font-family:var(--mono);font-size:26px;}
+.scenario-out span{color:var(--dim);font-size:12px;}
+.scenario input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--line);border-radius:3px;outline:none;}
+.scenario input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--blue);}
+.scenario input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid var(--bg);}
+.mon-positions{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+.mon-pos{border-top:1px solid var(--line);}
+.mon-pos:first-of-type{border-top:none;}
+.mon-pos-row{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;background:none;border:none;padding:13px 0;cursor:pointer;text-align:left;}
+.mon-pos-name{color:var(--ink);font-family:var(--display);font-size:15px;}
+.mon-pos-floor{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;flex:none;}
+.mon-pos-explain{padding:0 0 13px;}
+.mon-pos-explain p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.5;}
+.mon-pos-meta{margin-top:6px!important;font-family:var(--mono);font-size:11.5px;color:var(--dim);}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;
@@ -1203,8 +1264,9 @@ const CSS = `
   .hdr{padding:24px 16px 16px;gap:12px;}
   .hdr-title{font-size:23px;}
   .hdr-sub{font-size:12.5px;}
-  .nav{padding:0 8px;gap:2px;}
-  .nav button{padding:11px 7px;font-size:12.5px;gap:5px;}
+  .nav{padding:0 6px;gap:1px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
+  .nav::-webkit-scrollbar{display:none;}
+  .nav button{padding:10px 6px;font-size:11.5px;gap:4px;white-space:nowrap;flex:none;}
   .nav button svg{display:none;}
   .wrap{padding:6px 16px 0;}
   .lede{font-size:14px;}
