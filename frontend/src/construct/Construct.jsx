@@ -302,6 +302,17 @@ export default function Construct() {
 
   const pct = (v) => (account ? (v / account) * 100 : 0);
 
+  // Build-time enforcement (D4): what would tracking THIS trade do to the portfolio?
+  const tradeWorst = isFinite(built.maxLoss) ? Math.abs(built.maxLoss) : Infinity;
+  const tradeSoft = def.floor === "soft" ? tradeWorst : 0;
+  const curSoft = RISK ? RISK.softWorst : 0;
+  const curTotal = RISK ? RISK.totalWorst : 0;
+  const projSoftPct = pct(curSoft + tradeSoft);
+  const projTotalPct = pct(curTotal + (isFinite(tradeWorst) ? tradeWorst : 0));
+  const projOverBudget = projSoftPct > riskBudgetPct;
+  const overFloor = projTotalPct > 15;
+  const breaksLimit = projOverBudget || overFloor;
+
   return (
     <section className="wrap fade">
       <p className="lede">
@@ -443,8 +454,41 @@ export default function Construct() {
           )}
           {def.note && <p className="construct-note">{def.note}</p>}
 
-          <button className="place-btn" onClick={handlePlace} disabled={busy}>
-            {busy ? "Working…" : "I placed this — track it"}
+          <div className={breaksLimit ? "impact over" : "impact"}>
+            <div className="impact-stats">
+              <span>
+                If tracked, soft-floor →{" "}
+                <strong style={{ color: projOverBudget ? "#f85149" : "#e8b339" }}>
+                  {projSoftPct.toFixed(1)}%
+                </strong>{" "}
+                <em>/ {riskBudgetPct}% budget</em>
+              </span>
+              <span>
+                worst case →{" "}
+                <strong style={{ color: overFloor ? "#f85149" : "#e6ebf2" }}>
+                  {projTotalPct.toFixed(1)}%
+                </strong>{" "}
+                <em>/ 15% floor</em>
+              </span>
+            </div>
+            {breaksLimit && (
+              <p className="impact-warn">
+                {overFloor && projOverBudget
+                  ? "This pushes you past BOTH the 15% portfolio floor and your soft-floor budget."
+                  : overFloor
+                  ? "This pushes your portfolio past the 15% loss floor."
+                  : "This pushes your soft-floor exposure over budget."}{" "}
+                Consider a hard-floored structure (collar, spread, protective put) or a smaller size.
+              </p>
+            )}
+          </div>
+
+          <button
+            className={breaksLimit ? "place-btn over" : "place-btn"}
+            onClick={handlePlace}
+            disabled={busy}
+          >
+            {busy ? "Working…" : breaksLimit ? "Over your limit — track anyway" : "I placed this — track it"}
           </button>
         </div>
 
