@@ -50,9 +50,18 @@ recommendation), never as open-ended jargon.
 
 **Hard confirmation gates (must hear "yes" in the current message)**
 - Deleting files, overwriting code, dropping data, removing dependencies.
-- Deploying/pushing, running migrations/schema changes, any external API call with side effects.
+- Running migrations/schema changes, any external API call with side effects.
 - Sending/posting/sharing/scheduling anything outside the conversation.
 - "You mentioned this earlier" is **not** confirmation.
+
+**Standing authorization (granted 2026-06-01) — no per-message confirmation needed:**
+- **Deploying to GitHub:** committing and pushing to `main` (which auto-deploys to GitHub Pages)
+  is pre-authorized. Just do it as part of finishing work; don't ask first.
+- **Google integration:** proceed with any Google Drive / OAuth wiring on the app side without
+  asking. Steps that physically require the user's own Google account (Cloud Console clicks) still
+  need the user, since the assistant has no access there.
+- (Note: the harness may still gate a `git push` on turns lacking explicit deploy intent — that's a
+  platform guard the assistant cannot disable. If a push is blocked, surface it; don't work around it.)
 
 **After any coding task, end with:**
 `Files changed` / `What was modified` (one line each) / `Files intentionally not touched` / `Follow-up needed`.
@@ -105,10 +114,27 @@ credentials. (D15.)
 
 ## 6. Current state
 
-- ✅ **Options Primer + Simulator** (`frontend/src/OptionsPrimer.jsx`) — educational page, three
-  sections (Reckoner / Primer / Simulator), payoff-at-expiration engine. Introduces the
-  hard-floor vs soft-floor concept the whole tool depends on.
-- ⬜ **Everything else** — see `ROADMAP.md`. Next up: **Phase 0 shared data layer** on Alpaca paper.
+**Deployed and LIVE** at **https://dhruvc0110.github.io/Optionality/** (repo
+`github.com/dhruvc0110/Optionality`, public; push to `main` auto-deploys via GitHub Actions).
+Layers 0–4(prices-first) are built. **Nothing has been manually tested end-to-end yet — that's the
+top priority next session (see `TESTING.md`).**
+
+- ✅ **L0** — installable React+Vite PWA shell; **Primer/Reckoner/Simulator** (the educational trio),
+  rewritten as a DIYer narrative.
+- ✅ **L1 — Construct** — BSM pricing+Greeks+IV (`pricing/`), strategy library (`strategies/`), the
+  Construct tab (priced legs, Greeks, max gain/loss, breakevens, hard/soft floor), capital sizing,
+  in-app explainers + "how to place this" steps/calendar, and **promote-to-live → Google Drive**
+  (`storage/googleDrive.js`).
+- ✅ **L2 — Honesty Engine** (`risk/portfolio.js`) — folded into Construct's positions: worst-case
+  vs 15% floor, soft-floor budget meter (cap 15%), gap-stress, + build-time enforcement.
+- ✅ **L3 — Monitor tab** — health card, distance-to-floor gauges, aggregate Greeks, market-move
+  scenario, tap-to-explain positions.
+- ✅ **L4 (prices-first)** — keyless live stock quotes (`data/quotes.js`); price/strikes scale to any
+  ticker. **Deferred:** serverless broker proxy, option data/trading, alerts, push.
+- ⬜ **L5** — backtester (needs a paid historical-options-data vendor; D10).
+
+**Two flows built but UNVERIFIED (need a real human in a browser):** Google Drive sign-in/save, and
+the L4 "↻ Live price" button. Both are in the test plan.
 
 ---
 
@@ -117,8 +143,16 @@ credentials. (D15.)
 | File | Purpose |
 |------|---------|
 | `CLAUDE.md` | This file — operating manual |
-| `MEMORY.md` | Decision log + session summaries |
-| `ERRORS.md` | Failed-approach log |
-| `ROADMAP.md` | Phased plan, status, dependencies, deferred items |
-| `HANDOFF.md` | Packet orientation + setup steps |
-| `frontend/src/OptionsPrimer.jsx` | The one component built so far |
+| `MEMORY.md` | Decision log (D1–D18) + session summaries |
+| `ERRORS.md` | Failed-approach / gotcha log |
+| `ROADMAP.md` | Layer plan, status, dependencies, deferred items |
+| `HANDOFF.md` | How to resume next session |
+| `TESTING.md` | Step-by-step L1→L4 manual test plan (run this next) |
+| `frontend/src/OptionsPrimer.jsx` | App shell + Primer/Reckoner/Simulator + global styles |
+| `frontend/src/construct/Construct.jsx` | Construct tab (build + price + risk panel + positions) |
+| `frontend/src/monitor/Monitor.jsx` | Monitor dashboard tab |
+| `frontend/src/pricing/blackScholes.js` | BSM price + Greeks + implied-vol |
+| `frontend/src/strategies/library.js` | Strategy definitions, priced |
+| `frontend/src/risk/portfolio.js` | Portfolio risk math (shared by Construct + Monitor) |
+| `frontend/src/data/quotes.js` | Live quotes (broker-agnostic; keyless adapter) |
+| `frontend/src/storage/googleDrive.js` | Google Drive persistence |

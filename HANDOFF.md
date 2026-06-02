@@ -1,68 +1,77 @@
-# HANDOFF.md — Claude Code Hand-off Packet
+# HANDOFF.md — How to resume
 
-This packet transitions the project from design (in the Claude chat app) to engineering (Claude
-Code). It contains everything Claude Code needs to pick up with full context.
+The design + build phases are done through **Layer 4 (prices-first)**. The app is **deployed and
+live**. The job next session is **testing** (see `TESTING.md`), then continuing the roadmap.
 
 ---
 
 ## Read in this order
+1. **`CLAUDE.md`** — operating manual + current state (auto-loaded).
+2. **`MEMORY.md`** — decisions D1–D18 + session summaries (read Session 3 for what just happened).
+3. **`ERRORS.md`** — gotchas hit this build (Pages setup, harness gates, CORS, flaky test clicks).
+4. **`ROADMAP.md`** — layer status and what's next.
+5. **`TESTING.md`** — the step-by-step L1→L4 test plan. **This is the first task next session.**
 
-1. **`CLAUDE.md`** — operating manual (purpose, rules, current state). Claude Code auto-loads it.
-2. **`MEMORY.md`** — every decision made and why, plus the last session summary.
-3. **`ERRORS.md`** — known dead ends (empty so far).
-4. **`ROADMAP.md`** — the phased plan, status, and what's next.
+## The app, in one breath
+A backend-less, installable React PWA (Primer/Reckoner/Simulator/Construct/Monitor) that teaches
+options, builds & prices real trades, enforces a 15% portfolio floor (the "honesty engine"), and
+monitors a portfolio — with positions saved to the user's own Google Drive and live stock prices
+pulled keyless from the browser. Targets 18–24% returns with a ~15% loss floor, single user <$50k.
 
-## File manifest
+- **Live URL:** https://dhruvc0110.github.io/Optionality/
+- **Repo:** `github.com/dhruvc0110/Optionality` (public, `main` auto-deploys via GitHub Actions)
+- **Stack:** Vite + React PWA, all client-side. Google Drive (`drive.file`) for storage. No server.
 
-| File | What it is |
-|------|-----------|
-| `CLAUDE.md` | Operating manual / always-on context |
-| `MEMORY.md` | Decision log (D1–D11, P1) + session history |
-| `ERRORS.md` | Failed-approach log (template, no entries yet) |
-| `ROADMAP.md` | 5-phase roadmap with status and dependencies |
-| `HANDOFF.md` | This file |
-| `frontend/src/OptionsPrimer.jsx` | The one component built so far (React) |
+## Status (detail in CLAUDE.md §6 / ROADMAP.md)
+- ✅ L0 shell + educational trio · ✅ L1 Construct + pricing + Drive · ✅ L2 honesty engine +
+  enforcement · ✅ L3 Monitor · ✅ L4 prices-first (live stock quotes).
+- ⏳ **Untested end-to-end** — especially Google Drive sign-in and the L4 "Live price" button.
+- ⬜ Deferred: broker proxy (option data/trading), alerts, push, L5 backtester.
 
-## Repo structure (backend-less — see MEMORY D15)
-
-All computation is client-side; no backend. Data lives in the user's Google Drive (OAuth). The
-folders below (pricing / strategies / risk / monitor) are **client-side JS/React modules**, not a
-server. A serverless proxy is added only at Layer 4 for the broker key.
-
+## Repo structure (backend-less — MEMORY D15)
 ```
 repo-root/
-├── CLAUDE.md  MEMORY.md  ERRORS.md  ROADMAP.md  HANDOFF.md
-├── .github/workflows/    # CI: build Vite → deploy to GitHub Pages
-├── frontend/             # React + Vite PWA (the whole app)
-│   ├── public/icon.svg   # app icon (placeholder)
-│   ├── index.html
-│   └── src/
-│       ├── main.jsx
-│       ├── OptionsPrimer.jsx   # done
-│       ├── pricing/      # L1: Black-Scholes-Merton + Greeks (client-side)
-│       ├── strategies/   # L1: collar, put-spread collar, covered call, defined-risk spread
-│       ├── risk/         # L2: portfolio honesty engine (the floor-enforcing spine)
-│       ├── storage/      # L1: Google Drive (OAuth) persistence
-│       └── monitor/      # L3: P&L/Greeks aggregation, gauges, alerts
-└── (serverless proxy + backtester data: added at L4 / L5)
+├── CLAUDE.md MEMORY.md ERRORS.md ROADMAP.md HANDOFF.md TESTING.md
+├── .github/workflows/deploy.yml   # build Vite → deploy to GitHub Pages
+├── .env.example                   # placeholder for a future L4 serverless proxy only
+└── frontend/                      # the whole app
+    ├── index.html  vite.config.js  package.json
+    └── src/
+        ├── main.jsx  global.css
+        ├── OptionsPrimer.jsx       # app shell + nav + Primer/Reckoner/Simulator + ALL global CSS
+        ├── construct/Construct.jsx # Construct tab: build/price + risk panel + positions
+        ├── monitor/Monitor.jsx     # Monitor dashboard tab
+        ├── pricing/blackScholes.js # BSM price + Greeks + implied vol
+        ├── strategies/library.js   # 6 strategies, priced
+        ├── risk/portfolio.js       # portfolio risk math (shared: Construct + Monitor)
+        ├── data/quotes.js          # live quotes (broker-agnostic; keyless Yahoo-via-proxy)
+        └── storage/googleDrive.js  # Google Drive persistence (GIS token + Drive REST)
 ```
 
-## First actions in Claude Code
+## Running & deploying
+- **Local dev:** `cd frontend && npm install && npm run dev` → localhost:5173 (base is `/` in dev).
+- **Deploy:** committing + pushing to `main` is **pre-authorized** (D16) — it auto-builds and
+  deploys to Pages in ~1–2 min. Commit author: `Dhruv Chadha <dhruv.chadha@gmail.com>` via
+  `git -c user.name=… -c user.email=…` (do NOT change global git config). `.claude/` is git-ignored.
+- If a push is ever blocked by the harness, surface it; don't work around it (ERRORS.md).
 
-1. **Confirm the tech stack** (MEMORY P1: Python backend + React frontend) before writing backend code.
-2. **Set up Alpaca paper access** — *the user* creates their own Alpaca account and generates
-   **paper** API keys, then puts them in a git-ignored `.env`. Claude Code must never create the
-   account, handle the raw credentials in chat, or hardcode keys. Confirm options are enabled on
-   the paper account.
-3. **Build Phase 0 — the shared data layer:** a broker-agnostic interface returning quotes and
-   option chains, with the Alpaca paper adapter as the first implementation. This sets the data
-   shape every downstream component consumes, so get it right before moving on.
+## First actions next session
+1. **Run `TESTING.md`** L1→L4. Prioritise the two unverified flows: Google Drive sign-in/save and
+   the L4 "↻ Live price" button (both need a real human tap; automation couldn't trigger them).
+2. Fix whatever testing surfaces; log >2-attempt issues in `ERRORS.md`.
+3. Then pick the next build: **alerts + push** (needs a scheduled function + home-screen install) or
+   the **broker proxy** (option data/trading — decide Alpaca-paper→Tradier vs Tradier-only first).
+   Also: swap the placeholder gold-diamond icon for the user's chosen design.
+
+## Open questions (not blocking testing)
+- Historical options-data vendor for the L5 backtester (D10) — needs a spend decision.
+- Final icon / brand colours.
 
 ## Guardrails carried over (full detail in CLAUDE.md)
-
 - The **honesty principle**: never show a return/floor number the system can't defend.
-- The **floor is enforced at the portfolio level** by one risk layer (D4) — design toward this even
-  in early phases.
-- **Hard floor vs soft floor** (D6) is the core risk concept; thread it through data, risk, and UI.
-- Respect all **confirmation gates** (deletes, external API calls with side effects, deploys).
+- The **15% floor is enforced at the portfolio level** by one risk layer (D4); **hard vs soft floor**
+  (D6) is the core concept threaded through Construct, the honesty engine, and Monitor.
+- **Confirmation gates** still apply to deletes / migrations / sending-outside-the-conversation;
+  **deploying is pre-authorized** (D16). The user is non-technical — explain in plain language, offer
+  decisions as multiple-choice with a recommendation.
 - End every coding task with the four-part summary (changed / modified / not touched / follow-up).

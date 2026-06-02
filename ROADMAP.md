@@ -74,30 +74,31 @@ versus *breaks*. The tool never displays a confident number it can't defend.
 
 | Item | Status | Depends on | Notes |
 |------|--------|-----------|-------|
-| **Portfolio risk layer** (sizing authority, floor enforcement) | ⬜ | L1 | D4 — has power to shrink/refuse any trade |
-| Hard-floor vs soft-floor classification per position | ⬜ | risk layer | D6 |
-| Portfolio distance-to-floor (one number, right now) | ⬜ | risk layer | |
-| Risk-budget meter (total soft-floor exposure vs chosen cap) | ⬜ | risk layer | D5/D6 — needs the open-question cap value |
-| Overnight gap-stress | ⬜ | risk layer | D6 |
-| Earnings-calendar awareness | ⬜ | risk layer | D6 |
+| **Portfolio risk layer** (sizing authority, floor enforcement) | ✅ | L1 | D4 — risk read (panel) + build-time enforcement (pre-trade impact vs floor/budget, conscious override). Auto-shrink-to-fit could be a later refinement |
+| Hard-floor vs soft-floor classification per position | ✅ | risk layer | D6 |
+| Portfolio distance-to-floor (worst-case vs 15%) | ✅ | risk layer | Structural worst-case (positions as entered); live mark-to-market at L4 |
+| Risk-budget meter (soft-floor exposure vs cap) | ✅ | risk layer | D5/D6 — cap = 15% (D17), adjustable |
+| Overnight gap-stress (−10/−20/−35%) | ✅ | risk layer | D6 |
+| Earnings-calendar awareness | ⏸ | risk layer | D6 — needs live data; finishes at L4 |
 
 ### Layer 3 — Monitor surface (+ two delight features)
 
 | Item | Status | Depends on | Notes |
 |------|--------|-----------|-------|
-| Portfolio P&L + aggregate Greeks (manual-refresh first) | ⬜ | L2 | |
-| Distance-to-floor gauge (hard + soft readings) | ⬜ | L2 | |
-| Glanceable health "home" card | ⬜ | aggregation | Delight — one look on open |
-| Scenario panel ("market drops 10% tomorrow") | ⬜ | pricing + L2 | |
-| "Explain this position" (tap holding → primer explains that structure) | ⬜ | L1 + primer | Delight — cheap once inputs exist |
+| Aggregate Greeks + net premium (manual-refresh) | ✅ | L2 | Live mark-to-market P&L still needs broker data (L4) |
+| Distance-to-floor gauge (hard + soft readings) | ✅ | L2 | Two gauges: worst-case vs 15%, soft-floor vs budget |
+| Glanceable health "home" card | ✅ | aggregation | Healthy / Caution / Over-limit status at a glance |
+| Scenario panel (interactive "market moves X%") | ✅ | pricing + L2 | Slider −40%…+20% → portfolio P&L |
+| "Explain this position" (tap holding → plain-language note) | ✅ | L1 + primer | Tap a position to expand its explanation + key numbers |
 
 ### Layer 4 — Live data + the phone's killer feature
 
 | Item | Status | Depends on | Notes |
 |------|--------|-----------|-------|
-| Serverless proxy (holds broker key) + broker-agnostic data interface + Alpaca paper adapter | ⬜ | D8, D11, L3 | D15 — a single cloud function holds the key; not an always-on server, not keys-in-browser |
+| **Live stock quotes** (broker-agnostic interface + keyless adapter) | ✅ | L3 | D18 — `data/quotes.js`, Yahoo via CORS proxy; prices-first, no backend/key/cost. Auto-fills price + scales strikes to any ticker |
+| Serverless proxy + broker adapter (option data / trading) | ⬜ | D8/D11/D15 | Deferred until option data or trading is needed; broker choice (Alpaca / Tradier / Tradier-only) deferred too |
 | Alerts (floor-breach risk, expiry, assignment risk) | ⬜ | live data | |
-| Push notifications | ⬜ | alerts + install | iOS web-push needs home-screen install (16.4+) |
+| Push notifications | ⬜ | alerts + install | iOS web-push needs home-screen install (16.4+); needs a scheduled function |
 
 ### Layer 5 — Backtester (unlocks validated-return claims)
 
