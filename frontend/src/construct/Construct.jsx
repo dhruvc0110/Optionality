@@ -109,10 +109,25 @@ function ExplainNote({ k, onClose }) {
   );
 }
 
+// Horizontal meter: fill = current %, with a marker at the cap %.
+function RiskBar({ pct, cap, fillColor = "#3fb950", overColor = "#f85149" }) {
+  const scale = Math.max(pct, cap, 1) * 1.25;
+  const fillW = Math.min(pct / scale, 1) * 100;
+  const capX = Math.min(cap / scale, 1) * 100;
+  const over = pct > cap;
+  return (
+    <div className="riskbar">
+      <div className="riskbar-fill" style={{ width: fillW + "%", background: over ? overColor : fillColor }} />
+      <div className="riskbar-cap" style={{ left: capX + "%" }} title={`cap ${cap}%`} />
+    </div>
+  );
+}
+
 export default function Construct() {
   const [key, setKey] = useState("collar");
   const [ticker, setTicker] = useState("");
   const [account, setAccount] = useState(25000);
+  const [riskBudgetPct, setRiskBudgetPct] = useState(15); // soft-floor budget, % of principal
   const [market, setMarket] = useState({ spot: 100, days: 90, vol: 0.25, rate: 0.04, q: 0 });
   const [allStrikes, setAllStrikes] = useState(() => {
     const o = {};
@@ -254,6 +269,38 @@ export default function Construct() {
     date: fmtDate(expiryDate),
     action: EXPIRY_NOTE[key] || "Expiry day — the options resolve.",
   });
+
+  // ===== Layer 2: the Honesty Engine — portfolio risk from tracked positions =====
+  const RISK = useMemo(() => {
+    if (!positions.length) return null;
+    const rebuilt = positions.map((p) => {
+      const b = buildStrategy(p.strategyKey, p.strikes, p.market);
+      const floor = STRATEGY_LIB[p.strategyKey]?.floor || "soft";
+      const worst = isFinite(b.maxLoss) ? Math.abs(b.maxLoss) : Infinity;
+      return { p, b, floor, worst };
+    });
+    let totalWorst = 0,
+      softWorst = 0,
+      hardWorst = 0;
+    let unbounded = false;
+    for (const r of rebuilt) {
+      if (!isFinite(r.worst)) {
+        unbounded = true;
+        continue;
+      }
+      totalWorst += r.worst;
+      if (r.floor === "soft") softWorst += r.worst;
+      else hardWorst += r.worst;
+    }
+    const gapStress = [0.1, 0.2, 0.35].map((g) => {
+      let pnl = 0;
+      for (const r of rebuilt) pnl += r.b.pnlAt(r.p.market.spot * (1 - g));
+      return { gap: g, pnl };
+    });
+    return { count: positions.length, totalWorst, softWorst, hardWorst, unbounded, gapStress };
+  }, [positions]);
+
+  const pct = (v) => (account ? (v / account) * 100 : 0);
 
   return (
     <section className="wrap fade">
@@ -503,6 +550,71 @@ export default function Construct() {
           </button>
         )}
         {msg && <p className="pos-msg">{msg}</p>}
+
+        {RISK && (
+          <div className="riskpanel">
+            <div className="risk-head">Portfolio risk · the honesty engine</div>
+
+            <div className="risk-row">
+              <div className="risk-line">
+                <span>Worst case, all positions</span>
+                <strong style={{ color: pct(RISK.totalWorst) > 15 ? "#f85149" : "#e6ebf2" }}>
+                  −${Math.round(RISK.totalWorst).toLocaleString()} · {pct(RISK.totalWorst).toFixed(1)}%
+                </strong>
+              </div>
+              <RiskBar pct={pct(RISK.totalWorst)} cap={15} />
+              <p className="risk-note">
+                {pct(RISK.totalWorst) > 15
+                  ? `Over the 15% portfolio floor by ${(pct(RISK.totalWorst) - 15).toFixed(1)} points — trim risk or add hard-floored hedges.`
+                  : `${(15 - pct(RISK.totalWorst)).toFixed(1)} points of headroom to the 15% floor.`}
+                {RISK.unbounded ? " (A position has unbounded loss — not counted.)" : ""}
+              </p>
+            </div>
+
+            <div className="risk-row">
+              <div className="risk-line">
+                <span>Soft-floor (un-guaranteed)</span>
+                <strong style={{ color: pct(RISK.softWorst) > riskBudgetPct ? "#f85149" : "#e8b339" }}>
+                  −${Math.round(RISK.softWorst).toLocaleString()} · {pct(RISK.softWorst).toFixed(1)}%
+                </strong>
+              </div>
+              <RiskBar pct={pct(RISK.softWorst)} cap={riskBudgetPct} fillColor="#e8b339" />
+              <p className="risk-note">
+                {pct(RISK.softWorst) > riskBudgetPct
+                  ? `Over your ${riskBudgetPct}% soft-floor budget — this is the risk a gap can punch through.`
+                  : `Within your ${riskBudgetPct}% soft-floor budget.`}
+              </p>
+              <div className="risk-budget-ctrl">
+                <label>Soft-floor budget</label>
+                <input type="range" min={0} max={25} step={1} value={riskBudgetPct} onChange={(e) => setRiskBudgetPct(+e.target.value)} />
+                <span>{riskBudgetPct}%</span>
+              </div>
+            </div>
+
+            <div className="risk-gap-head">If every underlying gapped down overnight</div>
+            <table className="risk-gap">
+              <tbody>
+                {RISK.gapStress.map((g, i) => (
+                  <tr key={i}>
+                    <td>
+                      −{Math.round(g.gap * 100)}%{g.gap === 0.35 ? " · 2008/2020 scale" : ""}
+                    </td>
+                    <td style={{ textAlign: "right", color: g.pnl < 0 ? "#f85149" : "#3fb950" }}>
+                      {g.pnl < 0 ? "−" : "+"}${Math.abs(Math.round(g.pnl)).toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: "right", color: "var(--dim)" }}>{pct(g.pnl).toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p className="risk-caveat">
+              Computed from your positions as entered (1 contract each), against your ${account.toLocaleString()} account.
+              Live mark-to-market and earnings dates arrive with broker data (Layer 4).
+            </p>
+          </div>
+        )}
+
         {connected && positions.length === 0 && (
           <p className="pos-empty">
             No tracked positions yet. Build a trade above and tap "I placed this — track it".

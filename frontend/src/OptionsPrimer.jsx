@@ -1146,6 +1146,27 @@ const CSS = `
 .cal-when strong{display:block;font-family:var(--mono);font-size:12px;color:var(--ink);}
 .cal-when span{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px;}
 .cal-action{color:var(--mut);font-size:12.8px;line-height:1.5;}
+/* L2 — portfolio risk panel */
+.riskpanel{margin:14px 0 4px;padding:15px;background:var(--bg);border:1px solid var(--line);border-radius:12px;}
+.risk-head{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-bottom:12px;}
+.risk-row{margin-bottom:16px;}
+.risk-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px;}
+.risk-line span{color:var(--mut);font-size:12.5px;}
+.risk-line strong{font-family:var(--mono);font-size:14px;}
+.riskbar{position:relative;height:8px;background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+.riskbar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px 0 0 5px;transition:width .2s;}
+.riskbar-cap{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.8;}
+.risk-note{margin:6px 0 0;color:var(--mut);font-size:11.8px;line-height:1.45;}
+.risk-budget-ctrl{display:flex;align-items:center;gap:10px;margin-top:9px;}
+.risk-budget-ctrl label{color:var(--dim);font-size:11.5px;flex:none;}
+.risk-budget-ctrl input[type=range]{flex:1;height:4px;-webkit-appearance:none;background:var(--line);border-radius:3px;outline:none;}
+.risk-budget-ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg);}
+.risk-budget-ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg);}
+.risk-budget-ctrl span{font-family:var(--mono);font-size:12px;color:var(--gold);flex:none;width:34px;text-align:right;}
+.risk-gap-head{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin:4px 0 4px;}
+.risk-gap{width:100%;border-collapse:collapse;}
+.risk-gap td{border-top:1px solid var(--line);padding:8px 0;font-family:var(--mono);font-size:12.5px;color:var(--ink);}
+.risk-caveat{margin:12px 0 0;color:var(--dim);font-size:11px;line-height:1.5;}
 /* payoff chart axis caption */
 .chart-wrap{display:flex;flex-direction:column;}
 .axis-hint{display:flex;justify-content:space-between;gap:10px;margin-top:4px;padding:0 2px;
