@@ -1171,6 +1171,14 @@ const CSS = `
   border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:13px;letter-spacing:.04em;outline:none;}
 .ticker-input:focus{border-color:var(--blue);}
 .ticker-input::placeholder{color:var(--dim);letter-spacing:0;}
+.num-input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;
+  padding:9px 11px;font-family:var(--mono);font-size:14px;outline:none;}
+.num-input:focus{border-color:var(--blue);}
+.live-btn{background:none;border:1px solid var(--blue);color:var(--blue);border-radius:7px;
+  padding:4px 9px;font-family:var(--body);font-size:11px;font-weight:500;cursor:pointer;transition:.16s;}
+.live-btn:hover:not(:disabled){background:rgba(88,166,255,.08);}
+.live-btn:disabled{opacity:.55;cursor:default;}
+.live-msg{margin:7px 0 0;color:var(--mut);font-size:11.5px;}
 /* how-to + calendar */
 .howto{max-width:1080px;margin:18px auto 0;padding:18px;background:linear-gradient(180deg,var(--panel2),var(--panel));
   border:1px solid var(--line);border-radius:14px;}

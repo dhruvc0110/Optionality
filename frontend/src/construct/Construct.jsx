@@ -9,6 +9,7 @@ import {
 } from "../strategies/library.js";
 import { connectDrive, loadPositions, savePositions } from "../storage/googleDrive.js";
 import { computePortfolioRisk } from "../risk/portfolio.js";
+import { getQuote } from "../data/quotes.js";
 
 const floorColor = (f) =>
   f === "hard" ? "#3fb950" : f === "defined" ? "#58a6ff" : "#e8b339";
@@ -151,6 +152,31 @@ export default function Construct({
   // positions / connected / account / riskBudgetPct come from the shell (shared with Monitor).
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [priceBusy, setPriceBusy] = useState(false);
+  const [priceMsg, setPriceMsg] = useState(null);
+
+  // Layer 4 prices-first: pull a live quote for the ticker and reset to that price.
+  const fetchLive = async () => {
+    if (!ticker.trim()) {
+      setPriceMsg("Enter a ticker first.");
+      return;
+    }
+    setPriceBusy(true);
+    setPriceMsg(null);
+    try {
+      const q = await getQuote(ticker);
+      if (!q) {
+        setPriceMsg("Couldn't fetch a live price — enter it manually.");
+      } else {
+        const p = Math.round(q.price);
+        setMarket((m) => ({ ...m, spot: p }));
+        setAllStrikes((prev) => ({ ...prev, [key]: defaultStrikes(key, p) }));
+        setPriceMsg(`Live: $${q.price.toFixed(2)} ${q.currency} · strikes reset around it`);
+      }
+    } finally {
+      setPriceBusy(false);
+    }
+  };
 
   // Tap-to-explain (click pins; hover previews on desktop) + the expandable guide.
   const [explain, setExplain] = useState(null);
@@ -294,6 +320,11 @@ export default function Construct({
   const projOverBudget = projSoftPct > riskBudgetPct;
   const overFloor = projTotalPct > 15;
   const breaksLimit = projOverBudget || overFloor;
+
+  // Strike slider ranges scale to the current price, so real-priced tickers work.
+  const sMin = Math.max(1, Math.round(market.spot * 0.5));
+  const sMax = Math.round(market.spot * 1.5);
+  const sStep = market.spot >= 200 ? 5 : 1;
 
   return (
     <section className="wrap fade">
@@ -479,6 +510,9 @@ export default function Construct({
           <div className="ctrl">
             <div className="ctrl-top">
               <label>Ticker (optional)</label>
+              <button className="live-btn" onClick={fetchLive} disabled={priceBusy}>
+                {priceBusy ? "fetching…" : "↻ Live price"}
+              </button>
             </div>
             <input
               className="ticker-input"
@@ -488,8 +522,22 @@ export default function Construct({
               value={ticker}
               onChange={(e) => setTicker(e.target.value.toUpperCase())}
             />
+            {priceMsg && <p className="live-msg">{priceMsg}</p>}
           </div>
-          <Slider label="Current price" val={market.spot} suffix="" prefix="$" min={50} max={200} step={1} onChange={(v) => setM("spot", v)} tone="#58a6ff" info={info("spot")} />
+          <div className="ctrl">
+            <div className="ctrl-top">
+              <label>Current price {info("spot")}</label>
+              <span className="ctrl-val" style={{ color: "#58a6ff" }}>${market.spot}</span>
+            </div>
+            <input
+              className="num-input"
+              type="number"
+              min={1}
+              step={1}
+              value={market.spot}
+              onChange={(e) => setM("spot", Math.max(1, Math.round(+e.target.value || 0)))}
+            />
+          </div>
           <Slider label="Days to expiry" val={market.days} suffix=" d" prefix="" min={7} max={365} step={1} onChange={(v) => setM("days", v)} info={info("days")} />
           <Slider label="Volatility" val={Math.round(market.vol * 100)} suffix="%" prefix="" min={5} max={120} step={1} onChange={(v) => setM("vol", v / 100)} info={info("vol")} />
           <Slider label="Risk-free rate" val={+(market.rate * 100).toFixed(2)} suffix="%" prefix="" min={0} max={8} step={0.25} onChange={(v) => setM("rate", v / 100)} info={info("rate")} />
@@ -505,9 +553,9 @@ export default function Construct({
               val={strikes[s.key]}
               prefix="$"
               suffix=""
-              min={50}
-              max={200}
-              step={1}
+              min={sMin}
+              max={sMax}
+              step={sStep}
               onChange={(v) => setStrike(s.key, v)}
               info={info("strike")}
             />
