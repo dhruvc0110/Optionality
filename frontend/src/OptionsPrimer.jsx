@@ -214,7 +214,177 @@ const STRATEGIES = {
     ],
     center: (p) => (p.k1 + p.k2) / 2,
   },
+  bullPutSpread: {
+    name: "Bull Put Spread",
+    stance: "Bullish / Income (credit)",
+    icon: Layers,
+    earns: "The stock stays above your short put strike.",
+    gainText: "Capped at the net credit",
+    lossText: "Capped: (width − credit)",
+    gainType: "capped",
+    lossType: "defined",
+    risk: "Defined",
+    blurb:
+      "Sell a put and buy a lower put to cap the risk. You keep the credit if the stock holds above the short strike; the long put fences your downside.",
+    sliders: [
+      { key: "sellK", label: "Sell put strike", min: 80, max: 120, step: 1 },
+      { key: "sellP", label: "Sell premium", min: 1, max: 12, step: 0.25 },
+      { key: "buyK", label: "Buy put strike", min: 60, max: 110, step: 1 },
+      { key: "buyP", label: "Buy premium", min: 0.5, max: 8, step: 0.25 },
+    ],
+    defaults: { sellK: 100, sellP: 4, buyK: 90, buyP: 2 },
+    legs: (p) => [
+      { kind: "put", dir: "short", strike: p.sellK, premium: p.sellP },
+      { kind: "put", dir: "long", strike: p.buyK, premium: p.buyP },
+    ],
+    center: (p) => (p.sellK + p.buyK) / 2,
+  },
+  bearCallSpread: {
+    name: "Bear Call Spread",
+    stance: "Bearish / Income (credit)",
+    icon: TrendingDown,
+    earns: "The stock stays below your short call strike.",
+    gainText: "Capped at the net credit",
+    lossText: "Capped: (width − credit)",
+    gainType: "capped",
+    lossType: "defined",
+    risk: "Defined",
+    blurb:
+      "Sell a call and buy a higher call to cap the risk. You keep the credit if the stock stays below the short strike.",
+    sliders: [
+      { key: "sellK", label: "Sell call strike", min: 80, max: 120, step: 1 },
+      { key: "sellP", label: "Sell premium", min: 1, max: 12, step: 0.25 },
+      { key: "buyK", label: "Buy call strike", min: 90, max: 140, step: 1 },
+      { key: "buyP", label: "Buy premium", min: 0.5, max: 8, step: 0.25 },
+    ],
+    defaults: { sellK: 100, sellP: 4, buyK: 110, buyP: 2 },
+    legs: (p) => [
+      { kind: "call", dir: "short", strike: p.sellK, premium: p.sellP },
+      { kind: "call", dir: "long", strike: p.buyK, premium: p.buyP },
+    ],
+    center: (p) => (p.sellK + p.buyK) / 2,
+  },
+  longStraddle: {
+    name: "Long Straddle",
+    stance: "Big move, either way",
+    icon: Activity,
+    earns: "The stock makes a big move — up OR down — before expiry.",
+    gainText: "Large either direction",
+    lossText: "Limited to both premiums",
+    gainType: "unlimited",
+    lossType: "defined",
+    risk: "Defined",
+    blurb:
+      "Buy a call AND a put at the same strike. Profits from a big move in either direction; you pay two premiums, so it needs a real move to pay off.",
+    sliders: [
+      { key: "strike", label: "Strike", min: 70, max: 130, step: 1 },
+      { key: "cP", label: "Call premium", min: 1, max: 15, step: 0.25 },
+      { key: "pP", label: "Put premium", min: 1, max: 15, step: 0.25 },
+    ],
+    defaults: { strike: 100, cP: 5, pP: 5 },
+    legs: (p) => [
+      { kind: "call", dir: "long", strike: p.strike, premium: p.cP },
+      { kind: "put", dir: "long", strike: p.strike, premium: p.pP },
+    ],
+    center: (p) => p.strike,
+  },
+  longStrangle: {
+    name: "Long Strangle",
+    stance: "Big move, either way (cheaper)",
+    icon: Activity,
+    earns: "The stock makes an even bigger move before expiry.",
+    gainText: "Large either direction",
+    lossText: "Limited to both premiums",
+    gainType: "unlimited",
+    lossType: "defined",
+    risk: "Defined",
+    blurb:
+      "Like a straddle but using out-of-the-money options — cheaper to put on, but needs an even bigger move to pay off.",
+    sliders: [
+      { key: "callK", label: "Call strike", min: 90, max: 140, step: 1 },
+      { key: "cP", label: "Call premium", min: 0.5, max: 12, step: 0.25 },
+      { key: "putK", label: "Put strike", min: 60, max: 110, step: 1 },
+      { key: "pP", label: "Put premium", min: 0.5, max: 12, step: 0.25 },
+    ],
+    defaults: { callK: 105, cP: 3, putK: 95, pP: 3 },
+    legs: (p) => [
+      { kind: "call", dir: "long", strike: p.callK, premium: p.cP },
+      { kind: "put", dir: "long", strike: p.putK, premium: p.pP },
+    ],
+    center: (p) => (p.callK + p.putK) / 2,
+  },
+  ironCondor: {
+    name: "Iron Condor",
+    stance: "Neutral / range-bound income",
+    icon: Layers,
+    earns: "The stock stays in a range between your short strikes.",
+    gainText: "Capped at the net credit",
+    lossText: "Capped at the wings",
+    gainType: "capped",
+    lossType: "defined",
+    risk: "Defined",
+    blurb:
+      "Sell a put spread below and a call spread above. Keep the credit if the stock stays in the middle; both ends are capped. The classic 'stock goes nowhere' income trade.",
+    sliders: [
+      { key: "psK", label: "Short put strike", min: 80, max: 100, step: 1 },
+      { key: "csK", label: "Short call strike", min: 100, max: 120, step: 1 },
+      { key: "wing", label: "Wing width", min: 5, max: 25, step: 1 },
+    ],
+    defaults: { psK: 95, csK: 105, wing: 10 },
+    legs: (p) => [
+      { kind: "put", dir: "short", strike: p.psK, premium: 1.6 },
+      { kind: "put", dir: "long", strike: p.psK - p.wing, premium: 0.6 },
+      { kind: "call", dir: "short", strike: p.csK, premium: 1.6 },
+      { kind: "call", dir: "long", strike: p.csK + p.wing, premium: 0.6 },
+    ],
+    center: () => 100,
+  },
+  longButterfly: {
+    name: "Long Butterfly",
+    stance: "Pinpoint / low cost",
+    icon: Layers,
+    earns: "The stock lands right at the middle strike at expiry.",
+    gainText: "Peaks at the middle strike",
+    lossText: "Limited to the net cost",
+    gainType: "capped",
+    lossType: "defined",
+    risk: "Defined",
+    blurb:
+      "Buy one call low, sell two at the middle, buy one high. A cheap bet that the stock pins a specific price — small defined cost, best payoff if it lands at the center.",
+    sliders: [
+      { key: "low", label: "Lower strike", min: 80, max: 100, step: 1 },
+      { key: "mid", label: "Middle strike", min: 90, max: 110, step: 1 },
+      { key: "high", label: "Upper strike", min: 100, max: 130, step: 1 },
+    ],
+    defaults: { low: 95, mid: 100, high: 105 },
+    legs: (p) => [
+      { kind: "call", dir: "long", strike: p.low, premium: 6 },
+      { kind: "call", dir: "short", strike: p.mid, premium: 3 },
+      { kind: "call", dir: "short", strike: p.mid, premium: 3 },
+      { kind: "call", dir: "long", strike: p.high, premium: 1.5 },
+    ],
+    center: (p) => p.mid,
+  },
 };
+
+// Rich teaching metadata layered on top of the engine defs above (group / when-to-use / example).
+const STRATEGY_EXTRA = {
+  longCall: { group: "Directional", whenToUse: "You're confident a stock will rise soon and want leverage with a known, capped risk.", example: "Stock at $100, buy the $100 call for $5 → profit above $105; worst case you lose the $500." },
+  longPut: { group: "Directional", whenToUse: "You expect a drop, or want to insure shares you already own against one.", example: "Buy the $100 put for $5 → it gains as the stock falls below $95; most you lose is $500." },
+  coveredCall: { group: "Income", whenToUse: "You own (or will own) 100 shares and want income in a flat-to-mildly-up market, accepting a capped upside.", example: "Own at $100, sell the $110 call for ~$2 → keep $200 if it stays under $110; shares called away above." },
+  cashSecuredPut: { group: "Income", whenToUse: "You'd happily own the stock lower and want to get paid while you wait.", example: "Sell the $95 put for ~$2.40 → keep it if it stays above $95, or buy shares at an effective ~$92.60." },
+  protectivePut: { group: "Protection", whenToUse: "You own shares and want a hard floor through an event or a rough patch.", example: "Own at $100, buy the $90 put for ~$1 → loss capped near $11/share no matter how far it falls." },
+  collar: { group: "Protection", whenToUse: "You want downside protection cheaply and will give up some upside to get it.", example: "Own at $100, buy the $92 put and sell the $110 call → fenced between ~$92 and $110, near-free." },
+  bullCallSpread: { group: "Directional", whenToUse: "Moderately bullish; you want a cheaper, defined-risk bet than a lone call.", example: "Buy $100 / sell $110 call for ~$3.50 → max ~$650 above $110, max loss $350." },
+  bullPutSpread: { group: "Income", whenToUse: "Mildly bullish; collect a credit up front and keep it if the stock holds up.", example: "Sell $100 / buy $90 put for ~$2 credit → keep $200 if it stays above $100; loss capped at $800." },
+  bearCallSpread: { group: "Income", whenToUse: "Mildly bearish; collect a credit and keep it if the stock stays down.", example: "Sell $100 / buy $110 call for ~$2 credit → keep $200 if it stays below $100; loss capped at $800." },
+  longStraddle: { group: "Neutral / volatility", whenToUse: "You expect a big move but don't know the direction (e.g. into earnings).", example: "Buy the $100 call + $100 put for ~$10 → profit past $110 or below $90." },
+  longStrangle: { group: "Neutral / volatility", whenToUse: "Like a straddle but you expect an even bigger move and want it cheaper.", example: "Buy the $105 call + $95 put for ~$6 → cheaper, but needs a larger move to pay." },
+  ironCondor: { group: "Neutral / volatility", whenToUse: "You think the stock goes nowhere; earn income while it stays in a range.", example: "Sell the 95/85 put spread + 105/115 call spread for ~$2 → keep it if it stays $95–$105." },
+  longButterfly: { group: "Neutral / volatility", whenToUse: "You think the stock will pin a specific price; cheap with a defined cost.", example: "Buy $95 call, sell two $100 calls, buy $105 call for ~$1.50 → best if it lands at $100." },
+};
+
+const STRATEGY_GROUPS = ["Income", "Protection", "Directional", "Neutral / volatility"];
 
 const STRAT_KEYS = Object.keys(STRATEGIES);
 
@@ -633,6 +803,9 @@ export default function OptionsPrimer() {
   const lessonDemoKey = LESSON[step].demo;
   const lessonPayoff = usePayoff(lessonDemoKey, allParams[lessonDemoKey]);
 
+  const [detail, setDetail] = useState(null); // Reckoner deep-dive: strategy key or null
+  const detailPayoff = usePayoff(detail, detail ? allParams[detail] : null);
+
   return (
     <div className="root">
       <style>{CSS}</style>
@@ -666,50 +839,106 @@ export default function OptionsPrimer() {
       </nav>
 
       {/* ============ RECKONER ============ */}
-      {section === "reckoner" && (
+      {section === "reckoner" && !detail && (
         <section className="wrap fade">
           <p className="lede">
-            These are the same moves from the Primer — Harborview and all — laid out as quick
-            reference cards. Each one is really an answer to a single question:{" "}
-            <em>how much risk will I trade for how much return?</em> The colour tells you the most
-            important thing at a glance: a{" "}
+            Every play, grouped by the <em>job</em> it does — earn income, protect what you own, bet
+            on a direction, or play a big move. The colour is the headline: a{" "}
             <strong style={{ color: "#3fb950" }}>hard</strong> floor survives a crash, a{" "}
             <strong style={{ color: "#e8b339" }}>soft</strong> one can break in an overnight gap.
-            Found one you like? Tap <em>Open in simulator</em> to drag the sliders and watch it
-            move before you ever risk a cent.
+            Tap any card for the deep dive — when to use it, a worked example, and the payoff.
           </p>
-          <div className="grid">
-            {STRAT_KEYS.map((k, i) => {
-              const s = STRATEGIES[k];
-              const Icon = s.icon;
-              return (
-                <article className="card" key={k} style={{ animationDelay: `${i * 60}ms` }}>
-                  <div className="card-top">
-                    <Icon size={18} className="card-icon" />
-                    <span className="risk-tag" style={{ color: riskColor(s.risk), borderColor: riskColor(s.risk) }}>
-                      {s.risk}
-                    </span>
+          {STRATEGY_GROUPS.map((g) => {
+            const keys = STRAT_KEYS.filter((k) => STRATEGY_EXTRA[k]?.group === g);
+            if (!keys.length) return null;
+            return (
+              <div key={g} className="rk-group">
+                <div className="rk-group-head">{g}</div>
+                <div className="grid">
+                  {keys.map((k) => {
+                    const s = STRATEGIES[k];
+                    const Icon = s.icon;
+                    return (
+                      <article
+                        className="card card-tap"
+                        key={k}
+                        onClick={() => setDetail(k)}
+                        role="button"
+                      >
+                        <div className="card-top">
+                          <Icon size={18} className="card-icon" />
+                          <span className="risk-tag" style={{ color: riskColor(s.risk), borderColor: riskColor(s.risk) }}>
+                            {s.risk}
+                          </span>
+                        </div>
+                        <h3 className="card-name">{s.name}</h3>
+                        <span className="card-stance">{s.stance}</span>
+                        <p className="card-blurb">{s.blurb}</p>
+                        <span className="card-cta">
+                          Deep dive <ArrowRight size={13} />
+                        </span>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      {/* ============ RECKONER — strategy deep dive ============ */}
+      {section === "reckoner" && detail && detailPayoff && (
+        <section className="wrap fade">
+          <button className="rk-back" onClick={() => setDetail(null)}>
+            <ArrowLeft size={14} /> All strategies
+          </button>
+          {(() => {
+            const s = STRATEGIES[detail];
+            const x = STRATEGY_EXTRA[detail] || {};
+            const Icon = s.icon;
+            return (
+              <div className="rk-detail">
+                <div className="rk-detail-head">
+                  <Icon size={22} className="card-icon" />
+                  <div>
+                    <h2 className="rk-detail-name">{s.name}</h2>
+                    <span className="card-stance">{x.group} · {s.stance}</span>
                   </div>
-                  <h3 className="card-name">{s.name}</h3>
-                  <span className="card-stance">{s.stance}</span>
-                  <p className="card-blurb">{s.blurb}</p>
-                  <div className="card-rows">
-                    <div>
-                      <span>Max gain</span>
-                      <strong style={{ color: "#3fb950" }}>{s.gainText}</strong>
-                    </div>
-                    <div>
-                      <span>Max loss</span>
-                      <strong style={{ color: "#f85149" }}>{s.lossText}</strong>
-                    </div>
+                  <span className="risk-tag" style={{ color: riskColor(s.risk), borderColor: riskColor(s.risk) }}>
+                    {s.risk}
+                  </span>
+                </div>
+
+                <p className="rk-detail-blurb">{s.blurb}</p>
+
+                {x.whenToUse && (
+                  <div className="rk-block">
+                    <div className="rk-block-head">When to use it</div>
+                    <p>{x.whenToUse}</p>
                   </div>
-                  <button className="card-cta" onClick={() => openInSim(k)}>
-                    Open in simulator <ArrowRight size={13} />
-                  </button>
-                </article>
-              );
-            })}
-          </div>
+                )}
+
+                <div className="demo-label">{s.name} — payoff at expiry</div>
+                <PayoffChart {...detailPayoff} height={240} />
+                <div className="rk-detail-stats">
+                  <StatPill label="Max gain" value={s.gainText} tone="#3fb950" />
+                  <StatPill label="Max loss" value={s.lossText} tone="#f85149" />
+                </div>
+
+                {x.example && (
+                  <div className="rk-block">
+                    <div className="rk-block-head">Worked example</div>
+                    <p>{x.example}</p>
+                  </div>
+                )}
+
+                <button className="primary rk-sim" onClick={() => openInSim(detail)}>
+                  Tinker in the Simulator <ArrowRight size={14} />
+                </button>
+              </div>
+            );
+          })()}
         </section>
       )}
 
@@ -1033,6 +1262,22 @@ const CSS = `
   font-size:12.5px;font-weight:500;cursor:pointer;transition:.18s;
 }
 .card-cta:hover{border-color:var(--gold);color:var(--gold);}
+/* reckoner: grouping + deep-dive */
+.rk-group-head{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin:20px 0 10px;}
+.card-tap{cursor:pointer;}
+.rk-back{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--mut);font-family:var(--body);font-size:13px;cursor:pointer;margin:2px 0 14px;padding:0;}
+.rk-back:hover{color:var(--ink);}
+.rk-detail{max-width:720px;}
+.rk-detail-head{display:flex;align-items:center;gap:13px;margin-bottom:14px;}
+.rk-detail-head > div{flex:1;}
+.rk-detail-name{font-family:var(--display);font-weight:600;font-size:24px;margin:0;}
+.rk-detail-blurb{color:var(--ink);opacity:.92;font-size:15px;line-height:1.5;margin:0 0 16px;}
+.rk-block{background:var(--panel);border-left:2px solid var(--gold);border-radius:0 8px 8px 0;padding:12px 15px;margin:0 0 16px;}
+.rk-block-head{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-bottom:5px;}
+.rk-block p{margin:0;color:var(--mut);font-size:13.5px;line-height:1.55;}
+.rk-detail-stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.rk-sim{margin-top:18px;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--gold);color:#1a1405;border:none;border-radius:9px;padding:12px;font-family:var(--body);font-size:13.5px;font-weight:600;cursor:pointer;transition:.16s;}
+.rk-sim:hover{filter:brightness(1.06);}
 /* primer */
 .progress{display:flex;gap:8px;margin:6px 0 22px;}
 .dot{width:34px;height:4px;border-radius:3px;background:var(--line);cursor:pointer;transition:.2s;}
