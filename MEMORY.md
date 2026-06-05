@@ -66,6 +66,22 @@ Format: **What was decided / Why / What was rejected and why.**
   Pricing/coverage to be verified before committing spend. Backtest data vendor may differ from the
   live broker.
 
+### D19 — Primer richness overhaul, Phase A (2026-06-02)
+- **What:** Made the educational surface much richer, inspired by Robinhood's primer (built our own,
+  not copied). **A.1:** strategy catalog expanded 7 → **13** (added bull-put/bear-call credit
+  spreads, long straddle, long strangle, iron condor, long butterfly); Reckoner now **grouped by
+  job** (Income / Protection / Directional / Neutral-volatility) with a **tap-in deep-dive** per
+  strategy (when-to-use, payoff chart, max gain/loss, worked example, floor, Open in Simulator); new
+  strategies flow into the Simulator automatically. **A.2:** the Primer became a **sectioned learning
+  path** — a section index (Foundations[11, the Harborview story] / Mechanics & the Greeks[5] / Risk &
+  the floor[5] / In the real world[3]) opening into per-section lessons (reuses the lesson stepper).
+- **Why:** User wanted Robinhood-level depth across content + strategies (picked all four richness
+  dimensions: more strategies, deeper structured lessons, interactive, real examples/when-to-use).
+- **Still to do (Phase B/C):** quizzes + progress tracking (B); glossary + polish (C).
+- **Note:** all in `OptionsPrimer.jsx` (now large — extracting Learn/strategies into modules is
+  future tech debt). New multi-leg teaching strategies use fixed representative premiums for the
+  payoff *shape* (teaching, not live pricing).
+
 ### D18 — Layer 4 prices-first: keyless live stock quotes, brokers deferred (2026-06-01)
 - **What:** Live STOCK prices via `data/quotes.js` — a broker-agnostic `getQuote()` with a keyless
   adapter (Yahoo Finance via the public `corsproxy.io`). No account, no key, no cost, no backend.

@@ -119,8 +119,10 @@ credentials. (D15.)
 Layers 0–4(prices-first) are built. **Nothing has been manually tested end-to-end yet — that's the
 top priority next session (see `TESTING.md`).**
 
-- ✅ **L0** — installable React+Vite PWA shell; **Primer/Reckoner/Simulator** (the educational trio),
-  rewritten as a DIYer narrative.
+- ✅ **L0** — installable React+Vite PWA shell; **Primer/Reckoner/Simulator** (the educational trio).
+  Primer is now a sectioned **learning curriculum** (Foundations/Mechanics/Risk/Real-world); Reckoner
+  is **13 strategies grouped by job with tap-in deep-dives** (Primer richness Phase A — D19; Phase
+  B quizzes/progress + C glossary still to do).
 - ✅ **L1 — Construct** — BSM pricing+Greeks+IV (`pricing/`), strategy library (`strategies/`), the
   Construct tab (priced legs, Greeks, max gain/loss, breakevens, hard/soft floor), capital sizing,
   in-app explainers + "how to place this" steps/calendar, and **promote-to-live → Google Drive**
