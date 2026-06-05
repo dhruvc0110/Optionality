@@ -808,12 +808,90 @@ const REALWORLD = [
   },
 ];
 
+// End-of-section quizzes. Each: prompt, options, index of the right one, and why.
+const FOUNDATIONS_QUIZ = {
+  title: "Check yourself",
+  quiz: [
+    { q: "You buy a $100 call for $5. At expiry the stock is $103. Are you in profit?", options: ["Yes — it's above the strike", "No — you need it above $105", "Can't tell"], answer: 1, why: "You only profit above strike + premium = $105. At $103 the call is worth $3, but you paid $5." },
+    { q: "Which position has a HARD floor (loss fixed even on an overnight gap)?", options: ["Selling a cash-secured put", "Owning shares + a bought put", "A covered call"], answer: 1, why: "A bought put caps your loss in writing. Selling premium is only a soft floor." },
+    { q: "The most a BUYER of an option can lose is…", options: ["Unlimited", "The premium they paid", "The strike price"], answer: 1, why: "A buyer's worst case is the premium — small, fixed risk is the whole appeal." },
+  ],
+};
+const MECHANICS_QUIZ = {
+  title: "Check yourself",
+  quiz: [
+    { q: "Time passing (Theta) generally helps which side?", options: ["The buyer", "The seller", "Neither"], answer: 1, why: "Options bleed time value daily — a cost for buyers, income for sellers." },
+    { q: "Volatility spikes before earnings. Options become…", options: ["Cheaper", "More expensive", "Unchanged"], answer: 1, why: "More uncertainty to pay for = pricier options (high Vega)." },
+    { q: "An option that's in-the-money at expiry…", options: ["Expires worthless", "Is automatically exercised", "Does nothing until you act"], answer: 1, why: "In-the-money options auto-exercise; shares or cash change hands." },
+  ],
+};
+const RISK_QUIZ = {
+  title: "Check yourself",
+  quiz: [
+    { q: "Why enforce the 15% floor at the PORTFOLIO level, not per trade?", options: ["It's easier to build", "In a crash, losses correlate and stack", "Brokers require it"], answer: 1, why: "Per-trade limits each look fine while the whole account sinks together." },
+    { q: "A stop-loss protects you across an overnight gap.", options: ["True", "False"], answer: 1, why: "False — the price jumps straight past the stop. Only a bought option holds across a gap." },
+    { q: "Your 'risk budget' caps…", options: ["Total capital deployed", "Un-guaranteed (soft-floor) worst-case loss", "Number of trades"], answer: 1, why: "It limits the soft-floor exposure a gap can punch through." },
+  ],
+};
+const REALWORLD_QUIZ = {
+  title: "Check yourself",
+  quiz: [
+    { q: "Best first move with a new strategy?", options: ["Go big to make it worth it", "Paper-trade or tiny size first", "Wait for a crash"], answer: 1, why: "The first trade is to learn the mechanics, not make money — small or paper first." },
+    { q: "A trade that only works in a calm market is…", options: ["Reliable income", "Borrowed time — plan for the bad month", "Risk-free"], answer: 1, why: "Build to survive the bad month; that's the month that decides your year." },
+  ],
+};
+
 const CURRICULUM = [
-  { id: "foundations", title: "Foundations", blurb: "Start here — the whole story of options, built around one stock you're watching.", icon: BookOpen, lessons: LESSON },
-  { id: "mechanics", title: "Mechanics & the Greeks", blurb: "What actually moves an option's price, and what happens at expiry.", icon: SlidersHorizontal, lessons: MECHANICS },
-  { id: "risk", title: "Risk & the floor", blurb: "Hard vs soft floors, the 15% cap, gap risk, and sizing your bets.", icon: Shield, lessons: RISK_LESSONS },
-  { id: "realworld", title: "In the real world", blurb: "Mistakes to dodge, what good looks like, and how to make your first trade.", icon: Activity, lessons: REALWORLD },
+  { id: "foundations", title: "Foundations", blurb: "Start here — the whole story of options, built around one stock you're watching.", icon: BookOpen, lessons: [...LESSON, FOUNDATIONS_QUIZ] },
+  { id: "mechanics", title: "Mechanics & the Greeks", blurb: "What actually moves an option's price, and what happens at expiry.", icon: SlidersHorizontal, lessons: [...MECHANICS, MECHANICS_QUIZ] },
+  { id: "risk", title: "Risk & the floor", blurb: "Hard vs soft floors, the 15% cap, gap risk, and sizing your bets.", icon: Shield, lessons: [...RISK_LESSONS, RISK_QUIZ] },
+  { id: "realworld", title: "In the real world", blurb: "Mistakes to dodge, what good looks like, and how to make your first trade.", icon: Activity, lessons: [...REALWORLD, REALWORLD_QUIZ] },
 ];
+
+// End-of-section quiz: tap an answer → instant correct/wrong + why.
+function Quiz({ quiz }) {
+  const [picks, setPicks] = React.useState({});
+  return (
+    <div className="quiz">
+      {quiz.map((item, qi) => {
+        const picked = picks[qi];
+        const answered = picked != null;
+        return (
+          <div className="quiz-q" key={qi}>
+            <div className="quiz-prompt">
+              {qi + 1}. {item.q}
+            </div>
+            <div className="quiz-opts">
+              {item.options.map((opt, oi) => {
+                let cls = "quiz-opt";
+                if (answered && oi === item.answer) cls += " correct";
+                else if (answered && oi === picked) cls += " wrong";
+                return (
+                  <button
+                    key={oi}
+                    className={cls}
+                    disabled={answered}
+                    onClick={() => setPicks((p) => ({ ...p, [qi]: oi }))}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            {answered && (
+              <p className="quiz-why">
+                <strong style={{ color: picked === item.answer ? "#3fb950" : "#f85149" }}>
+                  {picked === item.answer ? "Correct. " : "Not quite. "}
+                </strong>
+                {item.why}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /* ----------------------------------------------------------------
    UI atoms
@@ -881,6 +959,23 @@ const SECTIONS = ["primer", "reckoner", "sim", "construct", "monitor"];
 const sectionFromHash = () => {
   const h = (window.location.hash || "").replace("#", "");
   return SECTIONS.includes(h) ? h : "primer";
+};
+
+// Primer progress (which lessons you've seen), saved on-device.
+const PROGRESS_KEY = "optionality.primer.seen";
+const loadSeen = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(PROGRESS_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+};
+const saveSeen = (set) => {
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify([...set]));
+  } catch {
+    /* storage may be unavailable — progress is best-effort */
+  }
 };
 
 /* ----------------------------------------------------------------
@@ -962,8 +1057,25 @@ export default function OptionsPrimer() {
 
   // Primer is now a curriculum: pick a section, then step through its lessons.
   const [course, setCourse] = useState(null); // section index, or null = section index view
+  const [seen, setSeen] = useState(loadSeen); // lessons viewed (progress), persisted on-device
   const courseLessons = course != null ? CURRICULUM[course].lessons : null;
   const activeLesson = courseLessons ? courseLessons[step] : null;
+
+  // Mark the current lesson as seen (for progress).
+  useEffect(() => {
+    if (course == null) return;
+    const k = CURRICULUM[course].id + ":" + step;
+    setSeen((prev) => {
+      if (prev.has(k)) return prev;
+      const next = new Set(prev);
+      next.add(k);
+      saveSeen(next);
+      return next;
+    });
+  }, [course, step]);
+
+  const sectionSeen = (i) =>
+    CURRICULUM[i].lessons.reduce((n, _, idx) => n + (seen.has(CURRICULUM[i].id + ":" + idx) ? 1 : 0), 0);
   const lessonDemoKey = activeLesson ? activeLesson.demo : null;
   const lessonPayoff = usePayoff(lessonDemoKey, lessonDemoKey ? allParams[lessonDemoKey] : null);
   const openCourse = (i) => {
@@ -1121,16 +1233,27 @@ export default function OptionsPrimer() {
           <div className="course-list">
             {CURRICULUM.map((c, i) => {
               const Icon = c.icon;
+              const total = c.lessons.length;
+              const done = sectionSeen(i);
+              const complete = done >= total;
               return (
                 <article className="course-card" key={c.id} onClick={() => openCourse(i)} role="button">
                   <div className="course-top">
                     <Icon size={18} className="card-icon" />
-                    <span className="course-count">{c.lessons.length} lessons</span>
+                    <span className="course-count" style={complete ? { color: "#3fb950" } : undefined}>
+                      {complete ? "✓ done" : done > 0 ? `${done}/${total} done` : `${total} lessons`}
+                    </span>
                   </div>
                   <h3 className="course-name">{c.title}</h3>
                   <p className="course-blurb">{c.blurb}</p>
+                  {done > 0 && !complete && (
+                    <div className="course-bar">
+                      <div className="course-bar-fill" style={{ width: (done / total) * 100 + "%" }} />
+                    </div>
+                  )}
                   <span className="card-cta">
-                    {i === 0 ? "Start here" : "Open"} <ArrowRight size={13} />
+                    {complete ? "Review" : done > 0 ? "Continue" : i === 0 ? "Start here" : "Open"}{" "}
+                    <ArrowRight size={13} />
                   </span>
                 </article>
               );
@@ -1151,37 +1274,50 @@ export default function OptionsPrimer() {
               <span key={i} className={i <= step ? "dot on" : "dot"} onClick={() => setStep(i)} />
             ))}
           </div>
-          <div className="lesson">
-            <div className="lesson-text">
+          {activeLesson.quiz ? (
+            <div className="lesson-quiz">
               <span className="lesson-count">
                 {String(step + 1).padStart(2, "0")} / {String(courseLessons.length).padStart(2, "0")}
               </span>
               <h2 className="lesson-title">{activeLesson.title}</h2>
-              <p className="lesson-body">{activeLesson.body}</p>
-              <div className="lesson-aside">
-                <span>↳</span>
-                <p>{activeLesson.aside}</p>
+              <p className="lesson-body">
+                A quick gut-check before you move on — tap an answer to see if it landed.
+              </p>
+              <Quiz quiz={activeLesson.quiz} />
+            </div>
+          ) : (
+            <div className="lesson">
+              <div className="lesson-text">
+                <span className="lesson-count">
+                  {String(step + 1).padStart(2, "0")} / {String(courseLessons.length).padStart(2, "0")}
+                </span>
+                <h2 className="lesson-title">{activeLesson.title}</h2>
+                <p className="lesson-body">{activeLesson.body}</p>
+                <div className="lesson-aside">
+                  <span>↳</span>
+                  <p>{activeLesson.aside}</p>
+                </div>
+              </div>
+              <div className="lesson-demo">
+                {lessonDemoKey ? (
+                  <>
+                    <div className="demo-label">{STRATEGIES[lessonDemoKey].name} — payoff at expiry</div>
+                    <PayoffChart
+                      {...lessonPayoff}
+                      spot={STRATEGIES[lessonDemoKey].center(allParams[lessonDemoKey])}
+                      height={220}
+                      compact
+                    />
+                    <button className="demo-link" onClick={() => openInSim(lessonDemoKey)}>
+                      Tinker with this <ArrowRight size={12} />
+                    </button>
+                  </>
+                ) : (
+                  <LessonPanel panel={activeLesson.panel} />
+                )}
               </div>
             </div>
-            <div className="lesson-demo">
-              {lessonDemoKey ? (
-                <>
-                  <div className="demo-label">{STRATEGIES[lessonDemoKey].name} — payoff at expiry</div>
-                  <PayoffChart
-                    {...lessonPayoff}
-                    spot={STRATEGIES[lessonDemoKey].center(allParams[lessonDemoKey])}
-                    height={220}
-                    compact
-                  />
-                  <button className="demo-link" onClick={() => openInSim(lessonDemoKey)}>
-                    Tinker with this <ArrowRight size={12} />
-                  </button>
-                </>
-              ) : (
-                <LessonPanel panel={activeLesson.panel} />
-              )}
-            </div>
-          </div>
+          )}
           <div className="lesson-nav">
             <button disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
               <ArrowLeft size={14} /> Back
@@ -1491,6 +1627,20 @@ const CSS = `
 .course-name{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 6px;}
 .course-blurb{color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 13px;flex:1;}
 .course-section-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin:0 0 14px;}
+.course-bar{height:4px;background:var(--line);border-radius:3px;overflow:hidden;margin:0 0 12px;}
+.course-bar-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .3s;}
+/* quiz */
+.lesson-quiz{max-width:680px;}
+.quiz{margin-top:14px;display:flex;flex-direction:column;gap:20px;}
+.quiz-prompt{color:var(--ink);font-size:15px;line-height:1.45;margin-bottom:11px;font-weight:500;}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{text-align:left;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:11px 14px;font-family:var(--body);font-size:13.5px;cursor:pointer;transition:.16s;}
+.quiz-opt:hover:not(:disabled){border-color:#2a3344;}
+.quiz-opt:disabled{cursor:default;}
+.quiz-opt.correct{border-color:var(--green);color:var(--green);background:rgba(63,185,80,.08);}
+.quiz-opt.wrong{border-color:var(--red);color:var(--red);background:rgba(248,81,73,.08);}
+.quiz-why{margin:10px 0 0;color:var(--mut);font-size:13px;line-height:1.5;}
 /* primer */
 .progress{display:flex;gap:8px;margin:6px 0 22px;}
 .dot{width:34px;height:4px;border-radius:3px;background:var(--line);cursor:pointer;transition:.2s;}
