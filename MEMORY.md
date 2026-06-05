@@ -77,7 +77,10 @@ Format: **What was decided / Why / What was rejected and why.**
   the floor[5] / In the real world[3]) opening into per-section lessons (reuses the lesson stepper).
 - **Why:** User wanted Robinhood-level depth across content + strategies (picked all four richness
   dimensions: more strategies, deeper structured lessons, interactive, real examples/when-to-use).
-- **Still to do (Phase B/C):** quizzes + progress tracking (B); glossary + polish (C).
+- **Phase B (done, 2026-06-02):** each section ends with a tap-to-answer "Check yourself" quiz
+  (instant correct/wrong + why); lesson progress tracked on-device (localStorage) → section cards
+  show X/N done, a progress bar, "✓ done", Continue/Review.
+- **Still to do (Phase C):** glossary + visual polish.
 - **Note:** all in `OptionsPrimer.jsx` (now large — extracting Learn/strategies into modules is
   future tech debt). New multi-leg teaching strategies use fixed representative premiums for the
   payoff *shape* (teaching, not live pricing).
