@@ -656,6 +656,166 @@ const LESSON = [
 ];
 
 /* ----------------------------------------------------------------
+   CURRICULUM — the Primer as a learning path (sections of lessons).
+   Foundations reuses the LESSON story; the rest go deeper.
+-----------------------------------------------------------------*/
+const MECHANICS = [
+  {
+    title: "Meet the Greeks",
+    body: "The 'Greeks' sound scary but they're just dials that tell you how an option's price will react. You don't compute them — the app does — you just need to know what each one is reacting to: the stock's direction, the passage of time, and how jumpy the market is.",
+    aside: "Think of them as the gauges on a dashboard. You don't build the engine; you just read the dials to know what's happening under the hood.",
+    panel: {
+      label: "The dials that matter",
+      prose: [
+        "Delta reacts to the stock's price. Theta reacts to time passing. Vega reacts to volatility (how jumpy things are). Gamma reacts to how fast Delta itself is changing.",
+        "For a beginner, Delta and Theta do 90% of the explaining. We'll take them one at a time.",
+      ],
+    },
+  },
+  {
+    title: "Delta — your directional speed",
+    body: "Delta is roughly how much your position moves for each $1 the stock moves. A Delta of 50 means you make about $50 when the stock rises a dollar (and lose $50 when it falls one). Owning 100 shares is a Delta of 100; options sit somewhere between 0 and 100 (negative for bearish ones).",
+    aside: "A handy second meaning: Delta is roughly the option's chance of finishing in-the-money. A 30-Delta call is loosely a ~30% bet. Open the Simulator and watch Delta climb as the stock rises past the strike.",
+    demo: "longCall",
+  },
+  {
+    title: "Theta — paying rent on time",
+    body: "Every option you BUY quietly loses a little value each day, even if the stock does nothing — that's Theta, the cost of the time you're renting. If you SELL options, Theta works for you: you collect that decay as income. It speeds up as expiry nears.",
+    aside: "This is why buyers need the stock to move *soon*, and why income sellers like calm markets and shorter-dated options. Time is the seller's friend and the buyer's clock.",
+    demo: "longCall",
+  },
+  {
+    title: "Vega — the price of uncertainty",
+    body: "Vega is how much your position reacts to changes in volatility — the market's expectation of how much the stock will swing. When fear spikes, option prices balloon (high Vega pays buyers); when calm returns, they deflate (which rewards sellers who sold the fear).",
+    aside: "It's why options get expensive right before earnings and sag right after, even if the stock barely moves — the uncertainty drained out.",
+    panel: {
+      label: "Volatility in one line",
+      prose: [
+        "High volatility = pricier options (more uncertainty to pay for). Low volatility = cheaper options.",
+        "Buyers want to buy when it's low and sell when it's high; income sellers do the reverse. You're always trading the *price of uncertainty*, not just direction.",
+      ],
+    },
+  },
+  {
+    title: "Exercise, assignment & settlement",
+    body: "At expiry the outcome is automatic. If your option is in-the-money it's exercised — for a single stock, 100 shares actually change hands. If it's out-of-the-money it simply expires worthless. 'Assignment' is just the seller's side: they get called on to honour the deal.",
+    aside: "Two things that surprise beginners: in-the-money options can be assigned *early* (especially short calls before a dividend), and index options usually settle in cash, not shares. When in doubt, close before expiry rather than get surprised.",
+    panel: {
+      label: "At the deadline",
+      prose: [
+        "In-the-money → auto-exercised (shares or cash change hands). Out-of-the-money → expires worthless.",
+        "Short options can be assigned early; index options often cash-settle. Closing before expiry avoids most surprises.",
+      ],
+    },
+  },
+];
+
+const RISK_LESSONS = [
+  {
+    title: "Hard floor vs soft floor, again",
+    body: "This is the idea the whole tool is built on, so it's worth hearing twice. If you OWN a put under your position, your loss is capped in writing — a hard floor that holds even if the stock gaps overnight. If you're only SELLING premium with nothing bought underneath, you have a soft floor: comfortable until the day it isn't.",
+    aside: "Same option chain, completely different nights' sleep. The Construct tab labels every trade hard or soft so you always know which kind of floor you're standing on.",
+    demo: "protectivePut",
+  },
+  {
+    title: "The 15% floor — and what it costs",
+    body: "Our north star is keeping portfolio losses near a 15% cap while aiming for 18–24% a year. Be clear-eyed: those two goals pull against each other. Protection costs return; chasing return (selling premium, concentrating) widens the downside. There's no free lunch — only chosen trade-offs.",
+    aside: "That's the honesty principle: the tool will never show you a confident return number it can't defend, and it'll tell you when 15% simply isn't reachable in the current setup.",
+    panel: {
+      label: "The trade-off, plainly",
+      prose: [
+        "Every dollar of protection you buy lowers your return a little. Every bit of extra yield you reach for widens your worst case.",
+        "The skill isn't avoiding the trade-off — it's choosing it on purpose, with the numbers in front of you.",
+      ],
+    },
+  },
+  {
+    title: "Gap risk — the overnight danger",
+    body: "Stocks don't only move while you're watching. Bad news lands overnight or on a weekend and the stock 'gaps' — opening far below where it closed, blowing past any stop-loss. This is exactly what breaks a soft floor: there was no chance to react, and a bought put is the only thing that would've held.",
+    aside: "March 2020 and single-name blowups like GameStop are gap risk in the wild. It's the single biggest reason this tool treats soft-floor exposure as a budget to spend carefully.",
+    panel: {
+      label: "Why gaps matter",
+      prose: [
+        "A stop-loss can't save you across a gap — the price jumps straight past it.",
+        "Only a position with a bought option underneath has a floor that survives the jump. That's the whole case for hard floors.",
+      ],
+    },
+  },
+  {
+    title: "Your risk budget",
+    body: "Since soft-floor bets are where the danger lives, you set a budget for them: the most un-guaranteed worst-case loss you'll carry, as a slice of your account. The Monitor and Construct tabs total your soft-floor exposure and warn you before a new trade pushes you over it.",
+    aside: "On a small account, one un-hedged trade can quietly become a huge share of your risk — the budget is the guardrail that keeps any single bet from dominating.",
+    panel: {
+      label: "How the budget works",
+      prose: [
+        "You pick a cap (e.g. 10–15% of principal). The honesty engine adds up every soft-floor position's worst case.",
+        "Go over, and the app flags it — it won't stop you, but it makes the choice conscious.",
+      ],
+    },
+  },
+  {
+    title: "Why losses stack in a crash",
+    body: "In calm markets your different trades feel independent. In a real crash they're not — almost everything falls together, and the losses stack. That's why the floor is enforced at the *portfolio* level by one risk layer, not trade-by-trade: per-trade limits each look fine while the whole account sinks.",
+    aside: "Diversification helps less than people hope when correlations all rush to 1. Sizing and hard floors help more. The Monitor's gap-stress shows you the stacked picture, not the rosy one.",
+    panel: {
+      label: "The portfolio view",
+      prose: [
+        "Correlation spikes in a crisis: things that normally zig and zag start falling in unison.",
+        "So we judge risk on the whole portfolio at once — that's what the honesty engine and the gap-stress test are for.",
+      ],
+    },
+  },
+];
+
+const REALWORLD = [
+  {
+    title: "Common beginner mistakes",
+    body: "Most early losses aren't from picking the wrong direction — they're from avoidable habits. Knowing the usual traps up front is worth more than any single strategy.",
+    aside: "None of these are about being smart enough; they're about being disciplined enough. The tool is built to nudge you away from each one.",
+    panel: {
+      label: "Traps to dodge",
+      prose: [
+        "Buying cheap far-out-of-the-money options because they're 'lottery tickets' — most expire worthless.",
+        "Selling naked premium for 'easy income' with no bought option underneath — fine until a gap.",
+        "Holding into expiry and getting surprised by assignment — close or roll early instead.",
+        "Sizing one trade so big that a single gap wrecks the account — respect the risk budget.",
+      ],
+    },
+  },
+  {
+    title: "What 'good' looks like",
+    body: "A healthy options book for someone in your seat is mostly hard-floored, sized so no single trade can sink you, with soft-floor income kept inside its budget. Boring on purpose. The wins come from many small, defined-risk trades compounding — not from one heroic bet.",
+    aside: "If a trade can only work in a calm market, treat it as borrowed time. Build so you survive the bad month, because that's the month that decides your year.",
+    panel: {
+      label: "A sensible shape",
+      prose: [
+        "Protection or defined-risk on the core; income selling only inside the soft-floor budget.",
+        "Small, repeatable, and survivable beats big, clever, and fragile.",
+      ],
+    },
+  },
+  {
+    title: "Your first trade, step by step",
+    body: "When you're ready, don't start with real money. Pick one stock you understand, build the trade in the Construct tab, read its priced legs and its floor, and check it fits your risk budget. Then place it on paper (or tiny size) first and watch how it behaves through a few real days before scaling up.",
+    aside: "Construct even gives you the exact broker steps and a calendar of what to do and when. Walk before you run: the goal of the first trade is to learn the mechanics, not to make money.",
+    panel: {
+      label: "The on-ramp",
+      prose: [
+        "Build it in Construct → check the floor and the risk-budget impact → note the step-by-step + calendar.",
+        "Place it on paper or in tiny size first. Track it, watch it, then decide whether to scale.",
+      ],
+    },
+  },
+];
+
+const CURRICULUM = [
+  { id: "foundations", title: "Foundations", blurb: "Start here — the whole story of options, built around one stock you're watching.", icon: BookOpen, lessons: LESSON },
+  { id: "mechanics", title: "Mechanics & the Greeks", blurb: "What actually moves an option's price, and what happens at expiry.", icon: SlidersHorizontal, lessons: MECHANICS },
+  { id: "risk", title: "Risk & the floor", blurb: "Hard vs soft floors, the 15% cap, gap risk, and sizing your bets.", icon: Shield, lessons: RISK_LESSONS },
+  { id: "realworld", title: "In the real world", blurb: "Mistakes to dodge, what good looks like, and how to make your first trade.", icon: Activity, lessons: REALWORLD },
+];
+
+/* ----------------------------------------------------------------
    UI atoms
 -----------------------------------------------------------------*/
 const riskColor = (r) =>
@@ -800,8 +960,17 @@ export default function OptionsPrimer() {
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
   };
 
-  const lessonDemoKey = LESSON[step].demo;
-  const lessonPayoff = usePayoff(lessonDemoKey, allParams[lessonDemoKey]);
+  // Primer is now a curriculum: pick a section, then step through its lessons.
+  const [course, setCourse] = useState(null); // section index, or null = section index view
+  const courseLessons = course != null ? CURRICULUM[course].lessons : null;
+  const activeLesson = courseLessons ? courseLessons[step] : null;
+  const lessonDemoKey = activeLesson ? activeLesson.demo : null;
+  const lessonPayoff = usePayoff(lessonDemoKey, lessonDemoKey ? allParams[lessonDemoKey] : null);
+  const openCourse = (i) => {
+    setCourse(i);
+    setStep(0);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+  };
 
   const [detail, setDetail] = useState(null); // Reckoner deep-dive: strategy key or null
   const detailPayoff = usePayoff(detail, detail ? allParams[detail] : null);
@@ -942,32 +1111,62 @@ export default function OptionsPrimer() {
         </section>
       )}
 
-      {/* ============ PRIMER ============ */}
-      {section === "primer" && (
+      {/* ============ PRIMER — section index ============ */}
+      {section === "primer" && course === null && (
         <section className="wrap fade">
+          <p className="lede">
+            Learn options as a path, not a wall of jargon. Begin at <em>Foundations</em> and work
+            down — each section builds on the one before.
+          </p>
+          <div className="course-list">
+            {CURRICULUM.map((c, i) => {
+              const Icon = c.icon;
+              return (
+                <article className="course-card" key={c.id} onClick={() => openCourse(i)} role="button">
+                  <div className="course-top">
+                    <Icon size={18} className="card-icon" />
+                    <span className="course-count">{c.lessons.length} lessons</span>
+                  </div>
+                  <h3 className="course-name">{c.title}</h3>
+                  <p className="course-blurb">{c.blurb}</p>
+                  <span className="card-cta">
+                    {i === 0 ? "Start here" : "Open"} <ArrowRight size={13} />
+                  </span>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ============ PRIMER — a section's lessons ============ */}
+      {section === "primer" && course !== null && activeLesson && (
+        <section className="wrap fade">
+          <button className="rk-back" onClick={() => setCourse(null)}>
+            <ArrowLeft size={14} /> Sections
+          </button>
+          <div className="course-section-title">{CURRICULUM[course].title}</div>
           <div className="progress">
-            {LESSON.map((_, i) => (
+            {courseLessons.map((_, i) => (
               <span key={i} className={i <= step ? "dot on" : "dot"} onClick={() => setStep(i)} />
             ))}
           </div>
           <div className="lesson">
             <div className="lesson-text">
               <span className="lesson-count">
-                {String(step + 1).padStart(2, "0")} / {String(LESSON.length).padStart(2, "0")}
+                {String(step + 1).padStart(2, "0")} / {String(courseLessons.length).padStart(2, "0")}
               </span>
-              <h2 className="lesson-title">{LESSON[step].title}</h2>
-              <p className="lesson-body">{LESSON[step].body}</p>
+              <h2 className="lesson-title">{activeLesson.title}</h2>
+              <p className="lesson-body">{activeLesson.body}</p>
               <div className="lesson-aside">
                 <span>↳</span>
-                <p>{LESSON[step].aside}</p>
+                <p>{activeLesson.aside}</p>
               </div>
             </div>
             <div className="lesson-demo">
               {lessonDemoKey ? (
                 <>
-                  <div className="demo-label">
-                    {STRATEGIES[lessonDemoKey].name} — payoff at expiry
-                  </div>
+                  <div className="demo-label">{STRATEGIES[lessonDemoKey].name} — payoff at expiry</div>
                   <PayoffChart
                     {...lessonPayoff}
                     spot={STRATEGIES[lessonDemoKey].center(allParams[lessonDemoKey])}
@@ -979,7 +1178,7 @@ export default function OptionsPrimer() {
                   </button>
                 </>
               ) : (
-                <LessonPanel panel={LESSON[step].panel} />
+                <LessonPanel panel={activeLesson.panel} />
               )}
             </div>
           </div>
@@ -987,13 +1186,17 @@ export default function OptionsPrimer() {
             <button disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
               <ArrowLeft size={14} /> Back
             </button>
-            {step < LESSON.length - 1 ? (
+            {step < courseLessons.length - 1 ? (
               <button className="primary" onClick={() => setStep((s) => s + 1)}>
                 Next <ArrowRight size={14} />
               </button>
+            ) : course < CURRICULUM.length - 1 ? (
+              <button className="primary" onClick={() => openCourse(course + 1)}>
+                Next: {CURRICULUM[course + 1].title} <ArrowRight size={14} />
+              </button>
             ) : (
-              <button className="primary" onClick={() => goSection("sim")}>
-                Go to simulator <ArrowRight size={14} />
+              <button className="primary" onClick={() => setCourse(null)}>
+                Finish <ArrowRight size={14} />
               </button>
             )}
           </div>
@@ -1278,6 +1481,16 @@ const CSS = `
 .rk-detail-stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
 .rk-sim{margin-top:18px;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--gold);color:#1a1405;border:none;border-radius:9px;padding:12px;font-family:var(--body);font-size:13.5px;font-weight:600;cursor:pointer;transition:.16s;}
 .rk-sim:hover{filter:brightness(1.06);}
+/* primer: section index */
+.course-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px;}
+.course-card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+  border-radius:13px;padding:17px;display:flex;flex-direction:column;cursor:pointer;transition:.2s;animation:fade .5s ease both;}
+.course-card:hover{border-color:#2a3344;transform:translateY(-2px);}
+.course-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+.course-count{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);}
+.course-name{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 6px;}
+.course-blurb{color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 13px;flex:1;}
+.course-section-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin:0 0 14px;}
 /* primer */
 .progress{display:flex;gap:8px;margin:6px 0 22px;}
 .dot{width:34px;height:4px;border-radius:3px;background:var(--line);cursor:pointer;transition:.2s;}
